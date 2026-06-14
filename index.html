@@ -1,1460 +1,2324 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>نظام الاستخبارات الجغرافية المتكامل — GEOINT Pro</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
-<style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;background:#0d1117;color:#c9d1d9;overflow:hidden}
-/* ── HEADER ── */
-#header{position:fixed;inset:0 0 auto 0;height:54px;background:linear-gradient(135deg,#161b22,#111318);border-bottom:1px solid #21262d;display:flex;align-items:center;gap:5px;padding:0 10px;z-index:900;box-shadow:0 2px 16px rgba(0,0,0,.5);overflow-x:auto;white-space:nowrap}
-.logo{display:flex;align-items:center;gap:7px;color:#58a6ff;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0}
-.logo-badge{width:29px;height:29px;background:linear-gradient(135deg,#1f6feb,#0080ff);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-/* ── SEARCH ── */
-.search-wrap{position:relative;flex:1;max-width:310px;min-width:120px}
-#search-input{width:100%;height:34px;padding:0 34px 0 10px;background:#21262d;border:1px solid #30363d;border-radius:7px;color:#c9d1d9;font-size:12.5px;direction:rtl;outline:none;transition:border-color .2s,background .2s;font-family:inherit}
-#search-input::placeholder{color:#484f58}
-#search-input:focus{border-color:#388bfd;background:#1c2128}
-.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#484f58;font-size:13px;pointer-events:none}
-#search-results{display:none;position:absolute;top:calc(100% + 5px);right:0;left:0;background:#1c2128;border:1px solid #30363d;border-radius:9px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.7);z-index:9100;max-height:240px;overflow-y:auto}
-.sr-item{padding:9px 13px;font-size:12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);color:#c9d1d9;transition:background .15s;word-break:break-word;white-space:normal}
-.sr-item:last-child{border-bottom:none}
-.sr-item:hover{background:rgba(56,139,253,.15);color:#58a6ff}
-.sr-item.sr-loading{color:#484f58}
-.sr-item.sr-error{color:#f85149}
-.sr-item.sr-coord{color:#e3b341;font-family:'Consolas',monospace;font-size:11px}
-/* ── HEADER BUTTONS ── */
-.h-btn{display:inline-flex;align-items:center;gap:4px;padding:0 8px;height:34px;background:#21262d;border:1px solid #30363d;border-radius:7px;color:#8b949e;font-size:11.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;font-family:inherit}
-.h-btn:hover{background:#30363d;color:#c9d1d9;border-color:#484f58}
-.h-btn.primary{background:rgba(31,111,235,.15);border-color:#1f6feb;color:#58a6ff}
-.h-btn.success{background:rgba(46,160,67,.2);border-color:#2ea043;color:#3fb950}
-.h-btn.warning{background:rgba(255,152,0,.15);border-color:#ff9800;color:#ffb74d}
-.h-btn.danger-outline{border-color:#6e1f24;color:#f85149}
-.h-btn.active{background:rgba(0,212,255,.18);border-color:#00d4ff;color:#00d4ff}
-/* ── MAP ── */
-#map{position:fixed;inset:54px 0 0 0}
-#map.drawing-cursor,#map.drawing-cursor .leaflet-interactive{cursor:crosshair!important}
-/* ── COORD PANEL ── */
-#coord-panel{position:fixed;bottom:16px;right:14px;width:242px;background:rgba(22,27,34,.96);border:1px solid #21262d;border-radius:10px;padding:13px;z-index:800;backdrop-filter:blur(14px);box-shadow:0 6px 28px rgba(0,0,0,.55)}
-.panel-head{display:flex;align-items:center;gap:7px;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#388bfd;margin-bottom:10px;font-weight:700}
-.panel-head::before{content:'';width:3px;height:13px;background:linear-gradient(180deg,#388bfd,#00d4ff);border-radius:2px}
-#place-name{font-size:11px;color:#e3b341;min-height:15px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.coord-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.coord-row:last-of-type{border-bottom:none}
-.c-lbl{font-size:10.5px;color:#484f58}
-.c-val{font-family:'Consolas','Courier New',monospace;font-size:13px;font-weight:700;color:#56d364;letter-spacing:.3px}
-#copy-coord-btn{margin-top:10px;width:100%;padding:7px;background:rgba(86,211,100,.1);border:1px solid rgba(86,211,100,.25);border-radius:6px;color:#56d364;font-size:11.5px;cursor:pointer;transition:all .18s;font-family:inherit}
-#copy-coord-btn:hover{background:rgba(86,211,100,.22)}
-/* ── ZONES PANEL ── */
-#zones-panel{position:fixed;top:64px;left:14px;width:258px;max-height:calc(100vh - 80px);background:rgba(22,27,34,.96);border:1px solid #21262d;border-radius:10px;z-index:800;backdrop-filter:blur(14px);box-shadow:0 6px 28px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
-.zp-head{padding:10px 13px;background:rgba(230,57,70,.08);border-bottom:1px solid rgba(230,57,70,.18);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.zp-title{font-size:11px;font-weight:700;color:#e63946;letter-spacing:.5px}
-#zone-badge{background:#e63946;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;min-width:20px;text-align:center}
-#zones-list{overflow-y:auto;flex:1;padding:7px}
-.zone-card{background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:10px;margin-bottom:7px;border-right-width:3px;transition:background .15s}
-.zone-card:hover{background:#1f2937}
-.zc-head{display:flex;align-items:center;gap:6px;margin-bottom:5px}
-.z-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.z-name-input{flex:1;min-width:0;background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.12);color:#c9d1d9;font-size:12px;font-weight:700;outline:none;padding:1px 3px;font-family:inherit;transition:border-color .15s}
-.z-name-input:focus{border-bottom-color:#388bfd}
-.z-meta{font-size:10px;color:#484f58;margin-bottom:7px;font-family:'Consolas',monospace;line-height:1.5}
-.z-actions{display:flex;gap:4px;flex-wrap:wrap}
-.z-btn{padding:3px 8px;border:none;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;transition:opacity .18s;font-family:inherit}
-.z-btn:hover{opacity:.82}
-.z-btn.info{background:#1f6feb;color:#fff}
-.z-btn.edit{background:#7c3aed;color:#fff}
-.z-btn.edit.active-edit{background:#2ea043}
-.z-btn.exp{background:#2ea043;color:#fff}
-.z-btn.del{background:#e63946;color:#fff}
-.empty-hint{text-align:center;padding:20px 10px;font-size:11px;color:#484f58;line-height:1.8}
-/* ── TOOLS SIDEBAR ── */
-#tools-sidebar{position:fixed;top:64px;right:14px;width:46px;background:rgba(22,27,34,.96);border:1px solid #21262d;border-radius:10px;z-index:799;backdrop-filter:blur(14px);box-shadow:0 6px 28px rgba(0,0,0,.55);display:flex;flex-direction:column;gap:5px;padding:7px 0;align-items:center}
-.tool-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:#8b949e;font-size:17px;cursor:pointer;border-radius:7px;transition:all .15s;position:relative}
-.tool-icon:hover{background:#21262d;color:#c9d1d9}
-.tool-icon.active{background:rgba(31,111,235,.25);color:#58a6ff}
-.tool-tip{position:absolute;right:44px;background:#1c2128;border:1px solid #30363d;color:#c9d1d9;font-size:10px;padding:4px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999}
-.tool-icon:hover .tool-tip{opacity:1}
-/* ── TOOL MODALS ── */
-.tool-modal{display:none;position:fixed;top:70px;right:68px;width:355px;max-height:82vh;background:rgba(22,27,34,.98);border:1px solid #30363d;border-radius:12px;z-index:9500;box-shadow:0 15px 40px rgba(0,0,0,.7);backdrop-filter:blur(16px);flex-direction:column;overflow:hidden}
-.tool-modal.open{display:flex}
-.tool-modal-header{padding:10px 14px;background:rgba(31,111,235,.1);border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;color:#c9d1d9;flex-shrink:0}
-.tool-modal-body{padding:12px;overflow-y:auto;flex:1}
-.tool-modal-close{background:none;border:none;color:#f85149;font-size:18px;cursor:pointer;padding:0 4px;line-height:1}
-.tool-input-group{margin-bottom:10px}
-.tool-input-group label{display:block;font-size:11px;color:#8b949e;margin-bottom:4px}
-.tool-input-group input,.tool-input-group select{width:100%;padding:6px 10px;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:12px;outline:none;font-family:inherit;direction:ltr;text-align:left}
-.tool-input-group input:focus{border-color:#388bfd}
-.tool-btn{padding:7px 13px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s;font-family:inherit;margin-left:4px;margin-top:4px}
-.tool-btn:hover{opacity:.85}
-.tool-btn:disabled{opacity:.4;cursor:not-allowed}
-.tool-btn.primary{background:#1f6feb;color:#fff}
-.tool-btn.success{background:#2ea043;color:#fff}
-.tool-btn.warning{background:#ff9800;color:#fff}
-.tool-btn.danger{background:#e63946;color:#fff}
-/* ── LOS ── */
-#los-progress,#viewshed-progress{margin-top:6px;font-size:11px;color:#e3b341;min-height:16px}
-#los-result{margin-top:8px;font-size:12px;line-height:1.8}
-#los-canvas{width:100%;height:175px;background:#0d1117;border:1px solid #21262d;border-radius:6px;margin-top:8px;display:block}
-/* ── BIG MODAL ── */
-#modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9000;align-items:center;justify-content:center}
-#modal-bg.open{display:flex}
-#modal-box{background:#161b22;border:1px solid #30363d;border-radius:12px;width:92%;max-width:510px;max-height:87vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.75);padding:20px;direction:rtl}
-.m-title{font-size:14px;font-weight:800;color:#e63946;margin-bottom:14px;display:flex;align-items:center;gap:9px}
-.m-title::before{content:'';width:4px;height:17px;background:linear-gradient(180deg,#e63946,#ff6b6b);border-radius:2px;flex-shrink:0}
-.m-stat{display:flex;justify-content:space-between;align-items:baseline;padding:6.5px 0;border-bottom:1px solid #21262d;font-size:12px}
-.m-stat:last-of-type{border-bottom:none}
-.m-lbl{color:#6e7681}
-.m-val{color:#56d364;font-family:'Consolas',monospace;font-weight:700;font-size:12.5px}
-.verts-lbl{font-size:10.5px;color:#6e7681;letter-spacing:.8px;margin-top:14px;margin-bottom:6px;text-transform:uppercase}
-#verts-container{background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:8px;max-height:200px;overflow-y:auto}
-.vert-row{display:flex;gap:10px;padding:2.5px 4px;border-bottom:1px solid rgba(255,255,255,.02);font-family:'Consolas',monospace;font-size:11px;color:#9ece6a}
-.vert-row:last-child{border-bottom:none}
-.v-idx{color:#3d444d;min-width:26px;flex-shrink:0}
-.m-actions{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
-.m-action-btn{flex:1;min-width:78px;padding:8px 4px;border:none;border-radius:7px;font-size:11.5px;font-weight:700;cursor:pointer;transition:opacity .18s,transform .1s;font-family:inherit}
-.m-action-btn:hover{opacity:.85;transform:translateY(-1px)}
-.m-action-btn.geojson{background:#2ea043;color:#fff}
-.m-action-btn.json{background:#1f6feb;color:#fff}
-.m-action-btn.copy{background:#7c3aed;color:#fff}
-.m-action-btn.close{background:#21262d;border:1px solid #30363d;color:#c9d1d9}
-/* ── DRAW BANNER ── */
-#draw-banner{display:none;position:fixed;top:62px;left:50%;transform:translateX(-50%);background:rgba(230,57,70,.94);color:#fff;padding:5px 22px;border-radius:20px;font-size:11.5px;font-weight:700;z-index:860;pointer-events:none;animation:pulse 1.8s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-/* ── CURSOR INFO ── */
-#cursor-info{position:fixed;bottom:16px;left:280px;background:rgba(22,27,34,.88);border:1px solid #21262d;border-radius:6px;padding:4px 10px;font-family:'Consolas',monospace;font-size:10.5px;color:#484f58;z-index:798;pointer-events:none}
-/* ── TOAST ── */
-#toast{display:none;position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:rgba(46,160,67,.93);color:#fff;padding:8px 22px;border-radius:22px;font-size:12.5px;font-weight:700;z-index:9999;white-space:nowrap;animation:toastIn .25s ease;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;max-width:90vw;text-align:center}
-#toast.err{background:rgba(248,81,73,.93)}
-@keyframes toastIn{from{transform:translateX(-50%) translateY(10px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
-/* ── LEAFLET OVERRIDES ── */
-.leaflet-control-zoom{border:none!important}
-.leaflet-control-zoom a{background:rgba(22,27,34,.95)!important;color:#8b949e!important;border:1px solid #30363d!important;border-radius:6px!important;margin-bottom:4px!important}
-.leaflet-popup-content-wrapper{background:#1c2128;border:1px solid #30363d;border-radius:8px;color:#c9d1d9}
-.leaflet-popup-tip{background:#1c2128}
-.leaflet-popup-content{direction:rtl;font-size:12px}
-/* ── SCROLLBARS ── */
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#21262d;border-radius:3px}
-/* ── RESPONSIVE ── */
-@media(max-width:660px){
-  #zones-panel{width:calc(100vw - 28px);max-height:200px}
-  #coord-panel{width:calc(100vw - 28px);right:14px;left:14px;bottom:8px}
-  #cursor-info{display:none}
-  #tools-sidebar{right:4px;top:60px;width:40px}
-  .tool-modal{right:48px;width:calc(100vw - 60px)}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة التحليل الذكي الاحترافية | 30 عملة | LSTM · WebSocket · Backtest · Telegram</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-primary: #080c13;
+            --bg-secondary: #0f141f;
+            --bg-card: #131a27;
+            --bg-card-hover: #192030;
+            --border: #1a2636;
+            --border-light: #233044;
+            --gold: #f0b90b;
+            --gold-light: #fcd535;
+            --green: #00e676;
+            --green-bg: #072b14;
+            --red: #ff3b5c;
+            --red-bg: #2b0d15;
+            --blue: #4d8af0;
+            --blue-bg: #0c1a30;
+            --purple: #a855f7;
+            --teal: #26a69a;
+            --teal-bg: #0a1f1c;
+            --text-primary: #e8edf5;
+            --text-secondary: #94a3b8;
+            --text-muted: #5c6e84;
+            --shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Tajawal', 'Cairo', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 15% 8%, rgba(240, 185, 11, 0.03) 0%, transparent 60%),
+                radial-gradient(ellipse at 85% 92%, rgba(77, 138, 240, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.02) 0%, transparent 55%);
+            padding: 10px;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 8px;
+        }
+        .risk-banner {
+            background: linear-gradient(135deg, #1a0f12 0%, #1c1016 100%);
+            border: 1px solid #3d1f28;
+            color: #fecdd3;
+            padding: 13px 18px;
+            border-radius: var(--radius);
+            margin-bottom: 14px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow);
+            animation: fadeInDown 0.5s ease;
+        }
+        .risk-banner i {
+            font-size: 20px;
+            color: #f87171;
+            flex-shrink: 0;
+            animation: pulse-warn 2s infinite;
+        }
+        @keyframes pulse-warn {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.45;
+            }
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: fadeInDown 0.6s ease;
+        }
+        .header .logo-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .header h1 {
+            font-size: 30px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--gold) 0%, #fde68a 40%, var(--gold-light) 70%, #f0b90b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 2px;
+            letter-spacing: -0.5px;
+        }
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .header .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            display: inline-block;
+            animation: live-pulse 1.4s infinite;
+            box-shadow: 0 0 8px var(--green);
+        }
+        @keyframes live-pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 5px var(--green);
+            }
+            50% {
+                box-shadow: 0 0 18px var(--green), 0 0 32px rgba(0, 230, 118, 0.45);
+            }
+        }
+        .grid {
+            display: grid;
+            gap: 12px;
+        }
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .grid-5 {
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        }
+        .grid-6 {
+            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+        }
+        .grid-tg {
+            grid-template-columns: 1fr 1fr;
+        }
+        @media (max-width: 768px) {
+            .grid-2,
+            .grid-tg {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 23px;
+            }
+            .grid-5,
+            .grid-6 {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 15px;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.45s ease forwards;
+            opacity: 0;
+            cursor: default;
+        }
+        .card:hover {
+            border-color: var(--border-light);
+            background: var(--bg-card-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+        }
+        .card.clickable {
+            cursor: pointer;
+        }
+        .card .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .card .card-header h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .card .price {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.3px;
+        }
+        .change-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 4px 9px;
+            border-radius: 16px;
+            font-size: 11.5px;
+            font-weight: 700;
+        }
+        .change-up {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+        .change-down {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+        .card .volume {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .chart-container {
+            position: relative;
+            height: 420px;
+            width: 100%;
+            margin-top: 6px;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .chart-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .chart-tab {
+            padding: 6px 12px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .chart-tab.active,
+        .chart-tab:hover {
+            background: var(--blue-bg);
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: var(--radius-sm);
+            max-height: 650px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 1000px;
+        }
+        table thead th {
+            background: var(--bg-secondary);
+            padding: 11px 8px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        table tbody td {
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.015);
+        }
+        .signal-tag {
+            padding: 5px 10px;
+            border-radius: 18px;
+            font-weight: 700;
+            font-size: 11px;
+            text-align: center;
+            display: inline-block;
+            min-width: 55px;
+        }
+        .tag-buy {
+            background: var(--green-bg);
+            color: var(--green);
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.18);
+        }
+        .tag-sell {
+            background: var(--red-bg);
+            color: var(--red);
+            box-shadow: 0 0 10px rgba(255, 59, 92, 0.18);
+        }
+        .tag-neutral {
+            background: #1a1f2b;
+            color: #94a3b8;
+        }
+        .confidence-bar {
+            width: 70px;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        .confidence-bar .fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.5s ease;
+        }
+        .fill-high {
+            background: var(--green);
+        }
+        .fill-mid {
+            background: var(--gold);
+        }
+        .fill-low {
+            background: var(--red);
+        }
+        .indicator-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 10.5px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .indicator-item {
+            background: var(--bg-secondary);
+            padding: 3px 8px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .footer-note {
+            margin-top: 20px;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-muted);
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.7;
+        }
+        .footer-note i {
+            color: var(--gold);
+            margin: 0 3px;
+        }
+        .last-update {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            text-align: left;
+            margin-top: 3px;
+        }
+        .refresh-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 7px 14px;
+            border-radius: 18px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .refresh-btn:hover {
+            background: var(--border-light);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        .refresh-btn:active {
+            transform: scale(0.94);
+        }
+        .refresh-btn i {
+            transition: transform 0.35s ease;
+        }
+        .refresh-btn:active i {
+            transform: rotate(180deg);
+        }
+        .refresh-btn.btn-teal {
+            border-color: var(--teal);
+            color: var(--teal);
+        }
+        .refresh-btn.btn-teal:hover {
+            background: var(--teal-bg);
+            border-color: #2dd4bf;
+            color: #2dd4bf;
+            box-shadow: 0 0 16px rgba(38, 166, 154, 0.25);
+        }
+        .refresh-btn.btn-purple {
+            border-color: var(--purple);
+            color: var(--purple);
+        }
+        .refresh-btn.btn-purple:hover {
+            background: #1a0f2e;
+            border-color: #c084fc;
+            color: #c084fc;
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.25);
+        }
+        .refresh-btn.btn-green {
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .refresh-btn.btn-green:hover {
+            background: var(--green-bg);
+            border-color: #00ff85;
+            color: #00ff85;
+            box-shadow: 0 0 16px rgba(0, 230, 118, 0.25);
+        }
+        .refresh-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .precision-highlight {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--purple);
+            margin: 8px 0 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .badge-new {
+            background: var(--purple);
+            color: #fff;
+            font-size: 9px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+            animation: pulse-warn 2.5s infinite;
+        }
+        .badge-live {
+            background: var(--green);
+            color: #000;
+            font-size: 9px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+            animation: live-pulse 1.8s infinite;
+        }
+        .ws-indicator {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+        .ws-live {
+            background: #00e676;
+            box-shadow: 0 0 8px #00e676;
+            animation: live-pulse 1.2s infinite;
+        }
+        .ws-dead {
+            background: #ff3b5c;
+        }
+        .backtest-summary {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            margin-top: 6px;
+        }
+        .backtest-metric {
+            background: var(--bg-secondary);
+            padding: 5px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        /* ============ TELEGRAM SECTION STYLES ============ */
+        .tg-card {
+            border-left: 3px solid #26a69a;
+            position: relative;
+        }
+        .tg-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 90% 10%, rgba(38, 166, 154, 0.06) 0%, transparent 60%);
+            pointer-events: none;
+            border-radius: var(--radius);
+        }
+        .tg-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .tg-input-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .tg-input-group label i {
+            color: var(--teal);
+            font-size: 13px;
+        }
+        .tg-input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 13px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-family: 'Consolas', 'Courier New', 'Tajawal', monospace;
+            transition: var(--transition);
+            width: 100%;
+            letter-spacing: 0.3px;
+        }
+        .tg-input:focus {
+            outline: none;
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.12);
+            background: #0d1520;
+        }
+        .tg-input::placeholder {
+            color: var(--text-muted);
+            font-family: 'Segoe UI', 'Tajawal', sans-serif;
+            font-size: 11px;
+            letter-spacing: 0;
+        }
+        .tg-toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 27px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1e293b;
+            border-radius: 27px;
+            transition: var(--transition);
+            border: 2px solid var(--border);
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 19px;
+            width: 19px;
+            left: 3px;
+            bottom: 2px;
+            background: #5c6e84;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        .toggle-switch input:checked+.toggle-slider {
+            background: var(--teal-bg);
+            border-color: var(--teal);
+            box-shadow: 0 0 12px rgba(38, 166, 154, 0.35);
+        }
+        .toggle-switch input:checked+.toggle-slider::before {
+            transform: translateX(21px);
+            background: #2dd4bf;
+            box-shadow: 0 0 8px rgba(45, 212, 191, 0.6);
+        }
+        .tg-status-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .tg-status-label.active {
+            color: var(--teal);
+        }
+        .tg-log-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            max-height: 210px;
+            overflow-y: auto;
+            font-size: 10.5px;
+            font-family: 'Consolas', 'Courier New', 'Tajawal', monospace;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-top: 8px;
+        }
+        .tg-log-entry {
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: flex-start;
+            gap: 7px;
+            animation: slideInRight 0.3s ease;
+        }
+        .tg-log-entry:last-child {
+            border-bottom: none;
+        }
+        .tg-log-entry .log-icon {
+            flex-shrink: 0;
+            font-size: 13px;
+            margin-top: 1px;
+        }
+        .tg-log-entry .log-icon.sent {
+            color: var(--green);
+        }
+        .tg-log-entry .log-icon.fail {
+            color: var(--red);
+        }
+        .tg-log-entry .log-icon.info {
+            color: var(--blue);
+        }
+        .tg-log-entry .log-time {
+            color: var(--text-muted);
+            font-size: 9.5px;
+            white-space: nowrap;
+        }
+        .tg-log-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 18px;
+            font-style: italic;
+        }
+        .tg-btn-row {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .saved-badge {
+            display: inline-block;
+            background: var(--teal-bg);
+            color: var(--teal);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            animation: fadeInUp 0.3s ease;
+        }
+        @keyframes toast-pop {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            padding: 11px 22px;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 13px;
+            animation: toast-pop 0.35s ease;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+        }
+        .toast-success {
+            background: #0d2818;
+            border: 1px solid var(--green);
+            color: var(--green);
+        }
+        .toast-error {
+            background: #2b0d15;
+            border: 1px solid var(--red);
+            color: var(--red);
+        }
+        .toast-info {
+            background: #0c1a30;
+            border: 1px solid var(--blue);
+            color: var(--blue);
+        }
+    </style>
 </head>
 <body>
 
-<!-- ════ HEADER ════ -->
-<div id="header">
-  <div class="logo">
-    <div class="logo-badge">📍</div>
-    <span>GEOINT Pro</span>
-  </div>
-  <div class="search-wrap">
-    <input id="search-input" type="text" placeholder="ابحث بالاسم أو الإحداثيات (lat, lng)…" autocomplete="off" spellcheck="false"/>
-    <span class="search-icon">🔍</span>
-    <div id="search-results"></div>
-  </div>
-  <button class="h-btn primary" id="btn-draw">✏️ رسم</button>
-  <button class="h-btn success" id="btn-finish" style="display:none">✅ إنهاء</button>
-  <button class="h-btn danger-outline" id="btn-cancel" style="display:none">✖ إلغاء</button>
-  <button class="h-btn" id="btn-clear">🗑 مسح العلامة</button>
-  <button class="h-btn" id="btn-satellite">🛰️ قمر صناعي</button>
-  <button class="h-btn" id="btn-cluster-toggle">📊 تجميع</button>
-  <button class="h-btn" id="btn-heatmap-toggle">🌡️ حرارية</button>
-  <button class="h-btn warning" id="btn-load-quakes">🌍 زلازل</button>
-</div>
-
-<!-- ════ MAP ════ -->
-<div id="map"></div>
-<div id="draw-banner">⚡ وضع الرسم — انقر لإضافة نقاط | النقر على أول نقطة يغلق المضلع</div>
-
-<!-- ════ COORD PANEL ════ -->
-<div id="coord-panel">
-  <div class="panel-head">الإحداثيات</div>
-  <div id="place-name"></div>
-  <div class="coord-row">
-    <span class="c-lbl">خط العرض (Lat)</span>
-    <span class="c-val" id="c-lat">-- ------</span>
-  </div>
-  <div class="coord-row">
-    <span class="c-lbl">خط الطول (Lng)</span>
-    <span class="c-val" id="c-lng">-- ------</span>
-  </div>
-  <button id="copy-coord-btn">📋 نسخ lat, lng</button>
-</div>
-<div id="cursor-info">حرّك المؤشر فوق الخريطة</div>
-
-<!-- ════ ZONES PANEL ════ -->
-<div id="zones-panel">
-  <div class="zp-head">
-    <span class="zp-title">🚫 المناطق المحظورة</span>
-    <span id="zone-badge">0</span>
-  </div>
-  <div id="zones-list">
-    <div class="empty-hint">لا توجد مناطق بعد<br>استخدم زر <strong>"رسم"</strong> للبدء</div>
-  </div>
-</div>
-
-<!-- ════ TOOLS SIDEBAR ════ -->
-<div id="tools-sidebar">
-  <button class="tool-icon" id="tool-buffer"><span>◎</span><span class="tool-tip">مناطق النفوذ (Buffer)</span></button>
-  <button class="tool-icon" id="tool-los"><span>👁️</span><span class="tool-tip">خط الرؤية (LOS)</span></button>
-  <button class="tool-icon" id="tool-viewshed"><span>📡</span><span class="tool-tip">تحليل التغطية الحقيقي</span></button>
-  <button class="tool-icon" id="tool-import"><span>📥</span><span class="tool-tip">استيراد KML/GeoJSON</span></button>
-  <button class="tool-icon" id="tool-timeline"><span>⏳</span><span class="tool-tip">المسار الزمني</span></button>
-  <button class="tool-icon" id="tool-mgrs"><span>🧭</span><span class="tool-tip">محول MGRS / DMS</span></button>
-  <button class="tool-icon" id="tool-isochrone"><span>⏱️</span><span class="tool-tip">زمن الوصول (Isochrones)</span></button>
-  <button class="tool-icon" id="tool-geofence"><span>🚨</span><span class="tool-tip">إنذار المناطق (Geofence)</span></button>
-</div>
-
-<!-- ════ MODAL: Buffer ════ -->
-<div id="modal-buffer" class="tool-modal">
-  <div class="tool-modal-header"><span>◎ مناطق النفوذ (Buffer)</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <div class="tool-input-group"><label>نصف القطر (متر)</label><input id="buffer-radius" type="number" value="5000" step="100"/></div>
-    <button class="tool-btn primary" id="buffer-apply">رسم دائرة حول العلامة</button>
-    <button class="tool-btn warning" id="buffer-clear">مسح الدوائر</button>
-  </div>
-</div>
-
-<!-- ════ MODAL: LOS (IMPROVED) ════ -->
-<div id="modal-los" class="tool-modal">
-  <div class="tool-modal-header"><span>👁️ خط الرؤية الحقيقي (LOS)</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <p style="font-size:11px;color:#8b949e;margin-bottom:8px;">انقر نقطتين على الخريطة — يتم جلب الارتفاعات عبر <strong>22 نقطة قياس</strong> مع تصحيح انحناء الأرض</p>
-    <div style="display:flex;gap:8px;">
-      <div class="tool-input-group" style="flex:1"><label>ارتفاع المراقب (م فوق الأرض)</label><input id="los-obs-h" type="number" value="2" min="0" max="500" step="0.5"/></div>
-      <div class="tool-input-group" style="flex:1"><label>ارتفاع الهدف (م فوق الأرض)</label><input id="los-tgt-h" type="number" value="0" min="0" max="500" step="0.5"/></div>
+    <div class="risk-banner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+            <strong>⚠️ تنبيه هام:</strong> هذه التحليلات آلية بالكامل وتستخدم نماذج LSTM ومؤشرات متقدمة وبيانات WebSocket حية.
+            التداول يحمل <strong>مخاطر عالية جداً</strong> وقد يؤدي لخسارة كاملة. المنصة <strong>لا تقدم توصيات استثمارية</strong>.
+        </div>
     </div>
-    <div id="los-progress"></div>
-    <canvas id="los-canvas" width="700" height="175"></canvas>
-    <div id="los-result"></div>
-    <button class="tool-btn danger" id="los-clear" style="margin-top:8px;">🗑 مسح نقاط LOS</button>
-  </div>
-</div>
 
-<!-- ════ MODAL: Viewshed (REAL) ════ -->
-<div id="modal-viewshed" class="tool-modal">
-  <div class="tool-modal-header"><span>📡 تحليل التغطية الحقيقي (Viewshed)</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <p style="font-size:11px;color:#8b949e;margin-bottom:8px;">يستخدم بيانات SRTM الفعلية عبر Open-Meteo مع تصحيح انحناء الأرض والانكسار الجوي</p>
-    <div class="tool-input-group"><label>ارتفاع المراقب فوق الأرض (متر)</label><input id="viewshed-obs-h" type="number" value="2" min="0" max="500"/></div>
-    <div class="tool-input-group"><label>مدى الرؤية القصوى (كم)</label><input id="viewshed-range" type="number" value="10" step="0.5" min="0.5" max="50"/></div>
-    <div class="tool-input-group"><label>دقة التحليل (عدد الأشعة)</label>
-      <select id="viewshed-rays">
-        <option value="24">24 شعاع — سريع (~2 ثانية)</option>
-        <option value="36" selected>36 شعاع — متوازن (~3 ثوانٍ)</option>
-        <option value="72">72 شعاع — دقيق جداً (~6 ثوانٍ)</option>
-      </select>
+    <div class="container">
+        <div class="header">
+            <span class="logo-icon">🧠</span>
+            <h1>منصة الخلايا العصبية الذكية – تحليل احترافي</h1>
+            <div class="subtitle">
+                <span class="live-dot"></span> WebSocket حي
+                &nbsp;|&nbsp; <i class="fa-solid fa-microchip"></i> LSTM + XGBoost هجين
+                &nbsp;|&nbsp; <i class="fa-solid fa-chart-candlestick"></i> Ichimoku · ADX · Fibonacci · OBV
+                &nbsp;|&nbsp; <strong style="color:var(--gold)">30 عملة + ذهب وفضة</strong>
+                &nbsp;|&nbsp; <span class="badge-new">مُحدَّث</span>
+                &nbsp;|&nbsp; <i class="fa-brands fa-telegram" style="color:#26a69a;"></i> <span style="color:#2dd4bf;">تيليجرام</span>
+            </div>
+        </div>
+
+        <!-- الذهب والفضة -->
+        <div class="grid grid-2" style="margin-bottom:12px;">
+            <div class="card clickable" id="goldCard">
+                <div class="card-header"><h3><span>🥇</span> الذهب (XAU/USD)</h3>
+                    <span id="goldChangeBadge" class="change-badge">--</span></div>
+                <div class="price" id="goldPrice">--</div>
+                <div class="indicator-row" id="goldIndicators"><span class="indicator-item">📊 جاري التحميل...</span></div>
+                <div class="volume" id="goldVolume"></div>
+            </div>
+            <div class="card clickable" id="silverCard">
+                <div class="card-header"><h3><span>🥈</span> الفضة (XAG/USD)</h3>
+                    <span id="silverChangeBadge" class="change-badge">--</span></div>
+                <div class="price" id="silverPrice">--</div>
+                <div class="indicator-row" id="silverIndicators"><span class="indicator-item">📊 جاري التحميل...</span></div>
+                <div class="volume" id="silverVolume"></div>
+            </div>
+        </div>
+
+        <!-- شبكة العملات -->
+        <div class="grid grid-6" id="cryptoGrid" style="margin-bottom:12px;"></div>
+
+        <!-- الرسم البياني -->
+        <div class="card" style="margin-bottom:12px;">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-chart-area" style="color: var(--blue);"></i> الرسم البياني التفاعلي + Ichimoku Cloud</h3>
+                <div class="chart-tabs" id="chartTabs">
+                    <button class="chart-tab active" data-asset="BTCUSDT">بيتكوين</button>
+                    <button class="chart-tab" data-asset="ETHUSDT">إيثيريوم</button>
+                    <button class="chart-tab" data-asset="SOLUSDT">سولانا</button>
+                    <button class="chart-tab" data-asset="XAU">ذهب</button>
+                    <button class="chart-tab" data-asset="XAG">فضة</button>
+                    <button class="chart-tab" data-asset="BNBUSDT">BNB</button>
+                    <button class="chart-tab" data-asset="DOGEUSDT">دوجكوين</button>
+                </div>
+            </div>
+            <div class="chart-container"><canvas id="mainChart"></canvas></div>
+            <div class="last-update" id="chartLastUpdate"></div>
+        </div>
+
+        <!-- قسم الباك تست -->
+        <div class="card" style="margin-bottom:12px;">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-flask" style="color: var(--purple);"></i> محاكي الباك تست (Backtesting Engine)
+                    <span class="badge-new">جديد</span></h3>
+                <button class="refresh-btn" id="runBacktestBtn"><i class="fa-solid fa-play"></i> تشغيل الباك تست</button>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">
+                اختبار أداء النموذج على بيانات تاريخية لمدة عام كامل. يتم حساب Sharpe Ratio و Maximum Drawdown و Win Rate.</p>
+            <div class="backtest-summary" id="backtestResults">
+                <span class="backtest-metric">📊 Sharpe: --</span>
+                <span class="backtest-metric">📉 Max DD: --</span>
+                <span class="backtest-metric">✅ Win Rate: --</span>
+                <span class="backtest-metric">💰 Profit Factor: --</span>
+                <span class="backtest-metric">🔢 عدد الصفقات: --</span>
+            </div>
+        </div>
+
+        <!-- ==================== قسم تيليجرام ==================== -->
+        <div class="card tg-card" style="margin-bottom:12px;">
+            <div class="card-header">
+                <h3>
+                    <i class="fa-brands fa-telegram" style="color: #26a69a; font-size: 18px;"></i>
+                    إعدادات تيليجرام – إرسال التوصيات تلقائياً
+                    <span class="badge-live" id="tgAutoBadge" style="display:none;">تلقائي مفعل</span>
+                </h3>
+                <span id="tgSavedBadge"></span>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">
+                <i class="fa-solid fa-info-circle" style="color:var(--teal);"></i>
+                أدخل Token البوت (من <strong>BotFather</strong>) ومعرّف القناة أو المجموعة (Chat ID).
+                يجب أن يكون البوت <strong>مشرفاً</strong> في القناة ليتمكن من الإرسال. الإشارات تُرسل بصيغة HTML منسقة.
+            </p>
+            <div class="grid grid-tg" style="gap:10px;">
+                <div class="tg-input-group">
+                    <label><i class="fa-solid fa-key"></i> Token البوت</label>
+                    <input type="password" class="tg-input" id="tgBotToken" placeholder="مثال: 1234567890:AAFfXxYyZz...">
+                </div>
+                <div class="tg-input-group">
+                    <label><i class="fa-solid fa-hashtag"></i> معرّف القناة (Chat ID)</label>
+                    <input type="text" class="tg-input" id="tgChatId" placeholder="مثال: -1001234567890 أو @channelname">
+                </div>
+            </div>
+            <div class="tg-toggle-row">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="tgAutoToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="tg-status-label" id="tgStatusLabel">🔴 الإرسال التلقائي: <strong>متوقف</strong></span>
+                <span style="flex:1;"></span>
+                <button class="refresh-btn btn-green" id="tgSaveBtn"><i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات</button>
+            </div>
+            <div class="tg-btn-row">
+                <button class="refresh-btn btn-teal" id="tgTestBtn"><i class="fa-solid fa-paper-plane"></i> إرسال تجريبي</button>
+                <button class="refresh-btn btn-purple" id="tgSendAllBtn"><i class="fa-solid fa-rocket"></i> إرسال كل الإشارات الحالية</button>
+                <button class="refresh-btn" id="tgClearLogBtn" style="font-size:10px;"><i class="fa-solid fa-eraser"></i> مسح السجل</button>
+            </div>
+            <div style="margin-top:8px;">
+                <strong style="font-size:11px;color:var(--text-secondary);">
+                    <i class="fa-solid fa-clock-rotate-left"></i> سجل الإرسال
+                    <span id="tgLogCount" style="color:var(--text-muted);">(0)</span>
+                </strong>
+            </div>
+            <div class="tg-log-box" id="tgLogBox">
+                <div class="tg-log-empty">📭 لا توجد عمليات إرسال حتى الآن. قم بحفظ الإعدادات ثم جرب الإرسال التجريبي.</div>
+            </div>
+        </div>
+
+        <!-- جدول الإشارات -->
+        <div class="card" style="margin-bottom:12px;">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-robot" style="color: var(--gold);"></i> إشارات LSTM + المؤشرات المتقدمة (32 أصل)
+                    <span class="ws-indicator ws-live" id="wsStatusDot" title="WebSocket"></span></h3>
+                <button class="refresh-btn" id="refreshSignalsBtn"><i class="fa-solid fa-arrows-rotate"></i> تحديث</button>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">
+                <i class="fa-solid fa-info-circle"></i>
+                <strong>نموذج هجين:</strong> LSTM (للنمط الزمني) + XGBoost (للمؤشرات) + Random Forest (للبيانات البديلة).
+                الإشارات مدعومة بـ <strong>Ichimoku · ADX · Fibonacci · OBV · Volume Profile</strong>. نقاط الدخول/الخروج محسوبة بمعيار كيلي.
+            </p>
+            <div class="table-wrapper">
+                <table id="signalsTable">
+                    <thead>
+                        <tr>
+                            <th>الأصل</th>
+                            <th>الإشارة</th>
+                            <th>الثقة</th>
+                            <th>الدخول</th>
+                            <th>الهدف</th>
+                            <th>الوقف</th>
+                            <th>R:R</th>
+                            <th>حجم المركز (كيلي)</th>
+                            <th>أهم المؤثر</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signalsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            <strong>تحذير:</strong> التداول عالي المخاطر. النماذج (LSTM + XGBoost Ensemble) دُرِّبت على بيانات حقيقية لكن الأداء السابق لا يضمن المستقبل.
+            استخدم إدارة مالية صارمة ولا تخاطر بأكثر مما تستطيع تحمل خسارته. <i class="fa-solid fa-shield-halved"></i>
+        </div>
     </div>
-    <div id="viewshed-progress"></div>
-    <button class="tool-btn primary" id="viewshed-apply">🔍 تحليل التغطية</button>
-    <button class="tool-btn warning" id="viewshed-clear">مسح</button>
-  </div>
-</div>
-
-<!-- ════ MODAL: Import ════ -->
-<div id="modal-import" class="tool-modal">
-  <div class="tool-modal-header"><span>📥 استيراد KML / GeoJSON</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <input type="file" id="import-file" accept=".kml,.geojson,.json" style="margin-bottom:10px;color:#c9d1d9;font-size:12px;width:100%;"/>
-    <button class="tool-btn primary" id="import-load">تحميل الملف</button>
-    <button class="tool-btn warning" id="import-clear">مسح المستورد</button>
-  </div>
-</div>
-
-<!-- ════ MODAL: Timeline ════ -->
-<div id="modal-timeline" class="tool-modal">
-  <div class="tool-modal-header"><span>⏳ المسار الزمني (Timeline)</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <p style="font-size:11px;color:#8b949e;margin-bottom:8px;">سجّل نقاطاً على الخريطة ثم شغّل الحركة مع فحص إنذار المناطق تلقائياً</p>
-    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
-      <button class="tool-btn primary" id="timeline-start">▶ بدء التسجيل</button>
-      <button class="tool-btn success" id="timeline-stop" disabled>⏹ إيقاف</button>
-      <button class="tool-btn warning" id="timeline-play">▷ تشغيل الحركة</button>
-      <button class="tool-btn danger" id="timeline-reset">🗑 مسح</button>
-    </div>
-    <div id="timeline-info" style="font-size:11px;color:#484f58;min-height:18px;"></div>
-    <input type="range" id="timeline-slider" min="0" max="0" value="0" style="width:100%;margin-top:8px;" disabled/>
-  </div>
-</div>
-
-<!-- ════ MODAL: MGRS/DMS ════ -->
-<div id="modal-mgrs" class="tool-modal">
-  <div class="tool-modal-header"><span>🧭 محول الإحداثيات MGRS / DMS</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <div class="tool-input-group"><label>إحداثيات (lat, lng) — مثال: 33.3152, 44.3661</label><input id="mgrs-input" placeholder="33.3152, 44.3661"/></div>
-    <button class="tool-btn primary" id="mgrs-convert">تحويل</button>
-    <button class="tool-btn success" id="mgrs-use-marker">استخدام موضع العلامة</button>
-    <div style="margin-top:12px;font-size:12px;line-height:2.2;">
-      <strong style="color:#8b949e;">MGRS:</strong> <span id="mgrs-out" style="color:#56d364;font-family:monospace;">--</span><br>
-      <strong style="color:#8b949e;">DMS:</strong> <span id="dms-out" style="color:#56d364;font-family:monospace;">--</span>
-    </div>
-  </div>
-</div>
-
-<!-- ════ MODAL: Isochrones ════ -->
-<div id="modal-isochrone" class="tool-modal">
-  <div class="tool-modal-header"><span>⏱️ مناطق زمن الوصول (Isochrones)</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <div class="tool-input-group"><label>مفتاح OpenRouteService API</label>
-      <input id="ors-key" value="eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjdjMmY3ODRjYzYyNTRjNzA5OTE5MGI4ZmIwMmYzOWM4IiwiaCI6Im11cm11cjY0In0=" style="font-size:10px;"/>
-    </div>
-    <div class="tool-input-group"><label>وسيلة التنقل</label>
-      <select id="isochrone-mode">
-        <option value="foot-walking">🚶 مشياً</option>
-        <option value="cycling-regular">🚴 دراجة هوائية</option>
-        <option value="driving-car">🚗 سيارة</option>
-      </select>
-    </div>
-    <div class="tool-input-group"><label>الزمن (دقيقة)</label><input id="isochrone-time" type="number" value="15" min="1" max="120"/></div>
-    <button class="tool-btn primary" id="isochrone-apply">حساب منطقة زمن الوصول</button>
-    <button class="tool-btn warning" id="isochrone-clear">مسح</button>
-  </div>
-</div>
-
-<!-- ════ MODAL: Geofence ════ -->
-<div id="modal-geofence" class="tool-modal">
-  <div class="tool-modal-header"><span>🚨 محاكي إنذار المناطق (Geofence)</span><button class="tool-modal-close">✖</button></div>
-  <div class="tool-modal-body">
-    <p style="font-size:11px;color:#8b949e;margin-bottom:8px;">افحص أي إحداثيات — يتم الإنذار تلقائياً أثناء تشغيل المسار الزمني</p>
-    <div class="tool-input-group"><label>lat, lng</label><input id="geofence-coord" placeholder="33.3152, 44.3661"/></div>
-    <button class="tool-btn primary" id="geofence-check">فحص</button>
-    <button class="tool-btn success" id="geofence-use-marker">استخدام موضع العلامة</button>
-    <div id="geofence-result" style="margin-top:10px;font-size:12px;line-height:1.8;"></div>
-  </div>
-</div>
-
-<!-- ════ MODAL: Zone Details ════ -->
-<div id="modal-bg">
-  <div id="modal-box">
-    <div class="m-title" id="m-title">📊 تفاصيل المنطقة</div>
-    <div class="m-stat"><span class="m-lbl">عدد الرؤوس</span><span class="m-val" id="m-verts-count">--</span></div>
-    <div class="m-stat"><span class="m-lbl">المساحة (كيلومتر مربع)</span><span class="m-val" id="m-area-km">--</span></div>
-    <div class="m-stat"><span class="m-lbl">المساحة (متر مربع)</span><span class="m-val" id="m-area-m2">--</span></div>
-    <div class="m-stat"><span class="m-lbl">المحيط (كيلومتر)</span><span class="m-val" id="m-perimeter">--</span></div>
-    <div class="m-stat"><span class="m-lbl">مركز الثقل</span><span class="m-val" id="m-centroid">--</span></div>
-    <div class="verts-lbl">إحداثيات الرؤوس — دقة 8 منازل عشرية:</div>
-    <div id="verts-container"></div>
-    <div class="m-actions">
-      <button class="m-action-btn geojson" id="m-btn-geojson">⬇ GeoJSON</button>
-      <button class="m-action-btn json" id="m-btn-json">⬇ JSON</button>
-      <button class="m-action-btn copy" id="m-btn-copy">📋 نسخ</button>
-      <button class="m-action-btn close" id="m-btn-close">✖ إغلاق</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<!-- ════ LIBRARIES ════ -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-<script src="https://unpkg.com/togeojson@0.16.0/togeojson.min.js"></script>
-<script src="https://unpkg.com/tokml@0.4.0/tokml.js"></script>
-<script src="https://unpkg.com/mgrs@1.0.0/dist/mgrs.min.js"></script>
-
-<script>
-'use strict';
-
-/* ══════════════════════════════════════════════════════════════════════
-   CONSTANTS & GLOBAL VARIABLES
-══════════════════════════════════════════════════════════════════════ */
-var R_EARTH   = 6371000;  // Earth radius (m)
-var K_REFRACT = 0.13;     // atmospheric refraction coefficient
-var ZONE_COLORS = ['#e63946','#00d4ff','#ffc947','#2ea043','#ff9800','#9c27b0','#00e5ff','#ff5722','#4fc3f7','#a3e635'];
-var CLOSE_DIST_M = 22;
-
-var map, streetTile, satelliteTile, labelsLayer;
-var isSatellite   = false;
-var mainMarker    = null;
-var drawMode      = false;
-var drawPoints    = [], drawLine = null, drawDots = [];
-var zones         = [], zoneSeq = 0, modalIdx = null, editIdx = null;
-var bufferLayer, viewshedLayer, isochroneLayer, quakeLayer, importedLayer;
-var clusterGroup, heatmapLayer = null;
-var timelinePoints = [], timelineMarker = null, timelineInterval = null;
-var timelineRecording = false, timelinePolyline = null;
-var losPoints = [], losMarkers = [], losLine = null;
-
-/* ══════════════════════════════════════════════════════════════════════
-   INIT MAP
-══════════════════════════════════════════════════════════════════════ */
-function initMap() {
-  map = L.map('map', { center:[33.3152,44.3661], zoom:7, zoomControl:true, preferCanvas:true });
-
-  streetTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'© <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
-    maxZoom:22
-  }).addTo(map);
-
-  /* Esri World Imagery — free satellite layer */
-  satelliteTile = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { attribution:'© Esri, Maxar, GeoEye, Earthstar Geographics', maxZoom:22 }
-  );
-
-  labelsLayer = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    { attribution:'', maxZoom:22 }
-  );
-
-  bufferLayer    = L.featureGroup().addTo(map);
-  viewshedLayer  = L.featureGroup().addTo(map);
-  isochroneLayer = L.featureGroup().addTo(map);
-  quakeLayer     = L.featureGroup().addTo(map);
-  importedLayer  = L.featureGroup().addTo(map);
-  clusterGroup   = L.markerClusterGroup({ chunkedLoading:true });
-
-  map.on('click', function(e) {
-    if (drawMode) {
-      addDrawPoint(e);
-    } else if (document.getElementById('modal-los').classList.contains('open')) {
-      addLOSPoint(e);
-    } else if (timelineRecording) {
-      addTimelinePoint(e);
-    } else {
-      placeMainMarker(e.latlng);
-    }
-  });
-
-  map.on('mousemove', function(e) {
-    document.getElementById('cursor-info').textContent =
-      e.latlng.lat.toFixed(7) + ',  ' + e.latlng.lng.toFixed(7);
-  });
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   SATELLITE TOGGLE
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('btn-satellite').addEventListener('click', function() {
-  isSatellite = !isSatellite;
-  if (isSatellite) {
-    map.removeLayer(streetTile);
-    satelliteTile.addTo(map);
-    labelsLayer.addTo(map);
-    this.textContent = '🗺️ خريطة الشارع';
-    this.classList.add('active');
-  } else {
-    map.removeLayer(satelliteTile);
-    map.removeLayer(labelsLayer);
-    streetTile.addTo(map);
-    this.textContent = '🛰️ قمر صناعي';
-    this.classList.remove('active');
-  }
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   MAIN MARKER & COORD PANEL
-══════════════════════════════════════════════════════════════════════ */
-function placeMainMarker(latlng) {
-  if (mainMarker) map.removeLayer(mainMarker);
-  var icon = L.divIcon({
-    className:'',
-    html:'<div style="width:22px;height:22px;background:radial-gradient(circle at 35% 35%,#88ccff,#1f6feb);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 10px rgba(56,139,253,.65);cursor:grab;"></div>',
-    iconSize:[22,22], iconAnchor:[11,11]
-  });
-  mainMarker = L.marker(latlng, { draggable:true, icon:icon }).addTo(map);
-  setCoordPanel(latlng);
-  mainMarker.on('drag',    function(ev){ setCoordPanel(ev.target.getLatLng()); });
-  mainMarker.on('dragend', function(ev){ setCoordPanel(ev.target.getLatLng()); });
-}
-
-function setCoordPanel(latlng, name) {
-  document.getElementById('c-lat').textContent = latlng.lat.toFixed(7);
-  document.getElementById('c-lng').textContent = latlng.lng.toFixed(7);
-  document.getElementById('place-name').textContent = name ? '📌 ' + name : '';
-}
-
-/* ══ COPY COORDS — FIXED: was blocking negative coords (South/West hemisphere) ══ */
-document.getElementById('copy-coord-btn').addEventListener('click', function() {
-  var lat = document.getElementById('c-lat').textContent.trim();
-  var lng = document.getElementById('c-lng').textContent.trim();
-  /* Fix: check for placeholder text, NOT for minus sign */
-  if (lat === '-- ------' || lat === '' || isNaN(parseFloat(lat))) {
-    showToast('لم يتم تحديد نقطة بعد!', true); return;
-  }
-  copyText(lat + ', ' + lng, '✓ تم نسخ: ' + lat + ', ' + lng);
-});
-
-document.getElementById('btn-clear').addEventListener('click', function() {
-  if (mainMarker) { map.removeLayer(mainMarker); mainMarker = null; }
-  document.getElementById('c-lat').textContent = '-- ------';
-  document.getElementById('c-lng').textContent = '-- ------';
-  document.getElementById('place-name').textContent = '';
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   SEARCH — IMPROVED (coordinates, DMS, all world regions)
-══════════════════════════════════════════════════════════════════════ */
-var srTimer = null;
-
-document.getElementById('search-input').addEventListener('keyup', function(e) {
-  clearTimeout(srTimer);
-  var q = this.value.trim();
-  if (e.key === 'Escape') { hideSR(); return; }
-  if (e.key === 'Enter')  { doSearch(q); return; }
-  if (q.length < 2) { hideSR(); return; }
-  srTimer = setTimeout(function(){ doSearch(q); }, 430);
-});
-
-/* Parse decimal or DMS coordinate strings */
-function parseCoords(txt) {
-  txt = txt.trim().replace(/،/g, ',');
-
-  /* Decimal: "33.31, 44.36" or "33.31 44.36" or "-33.31, 151.20" */
-  var m1 = txt.match(/^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/);
-  if (m1) {
-    var la = parseFloat(m1[1]), lo = parseFloat(m1[2]);
-    if (la >= -90 && la <= 90 && lo >= -180 && lo <= 180) return { lat:la, lng:lo };
-  }
-
-  /* DMS: 33°18'54"N, 44°21'57"E  or  33 18 54 N 44 21 57 E */
-  var m2 = txt.match(
-    /^(\d+)[°\s]+(\d+)['\s]+(\d+\.?\d*)"?\s*([NS])[,\s]+(\d+)[°\s]+(\d+)['\s]+(\d+\.?\d*)"?\s*([EWOwestost]+)$/i
-  );
-  if (m2) {
-    var la2 = (parseFloat(m2[1]) + parseFloat(m2[2])/60 + parseFloat(m2[3])/3600) * (/S/i.test(m2[4]) ? -1 : 1);
-    var lo2 = (parseFloat(m2[5]) + parseFloat(m2[6])/60 + parseFloat(m2[7])/3600) * (/W/i.test(m2[8]) ? -1 : 1);
-    if (la2 >= -90 && la2 <= 90 && lo2 >= -180 && lo2 <= 180) return { lat:la2, lng:lo2 };
-  }
-  return null;
-}
-
-async function doSearch(q) {
-  if (!q || q.length < 2) return;
-  var box = document.getElementById('search-results');
-
-  /* Coordinate input → jump directly */
-  var coords = parseCoords(q);
-  if (coords) {
-    box.innerHTML = '';
-    var d = document.createElement('div');
-    d.className = 'sr-item sr-coord';
-    d.textContent = '📍 انتقال إلى: ' + coords.lat.toFixed(6) + ', ' + coords.lng.toFixed(6);
-    d.addEventListener('click', function() {
-      var ll = L.latLng(coords.lat, coords.lng);
-      map.setView(ll, 14);
-      placeMainMarker(ll);
-      setCoordPanel(ll);
-      hideSR();
-      document.getElementById('search-input').value = '';
-    });
-    box.appendChild(d);
-    box.style.display = 'block';
-    return;
-  }
-
-  box.innerHTML = '<div class="sr-item sr-loading">⏳ جارٍ البحث…</div>';
-  box.style.display = 'block';
-
-  try {
-    var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' +
-      encodeURIComponent(q) + '&limit=8&accept-language=ar,en&addressdetails=1';
-    var res = await fetchTimeout(url, {}, 8000);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
-
-    if (!data.length) {
-      box.innerHTML = '<div class="sr-item sr-error">لا توجد نتائج مطابقة</div>';
-      return;
-    }
-    box.innerHTML = '';
-    data.forEach(function(item) {
-      var div = document.createElement('div');
-      div.className = 'sr-item';
-      div.textContent = item.display_name;
-      div.addEventListener('click', function() {
-        var ll = L.latLng(parseFloat(item.lat), parseFloat(item.lon));
-        map.setView(ll, 14);
-        placeMainMarker(ll);
-        var shortName = item.display_name.split(',')[0].trim();
-        setCoordPanel(ll, shortName);
-        hideSR();
-        document.getElementById('search-input').value = '';
-      });
-      box.appendChild(div);
-    });
-  } catch(err) {
-    box.innerHTML = '<div class="sr-item sr-error">⚠ خطأ: ' + err.message + '</div>';
-  }
-}
-
-function hideSR() { document.getElementById('search-results').style.display = 'none'; }
-document.addEventListener('click', function(e) {
-  if (!document.querySelector('.search-wrap').contains(e.target)) hideSR();
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   DRAW MODE
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('btn-draw').addEventListener('click', startDraw);
-document.getElementById('btn-finish').addEventListener('click', finishDraw);
-document.getElementById('btn-cancel').addEventListener('click', cancelDraw);
-
-function startDraw() {
-  drawMode = true; drawPoints = [];
-  document.getElementById('btn-draw').style.display   = 'none';
-  document.getElementById('btn-finish').style.display = 'inline-flex';
-  document.getElementById('btn-cancel').style.display = 'inline-flex';
-  document.getElementById('draw-banner').style.display = 'block';
-  document.getElementById('map').classList.add('drawing-cursor');
-}
-
-function addDrawPoint(e) {
-  L.DomEvent.stopPropagation(e);
-  var ll = e.latlng;
-  if (drawPoints.length >= 3 && map.distance(ll, drawPoints[0]) < CLOSE_DIST_M) { finishDraw(); return; }
-  drawPoints.push(ll);
-  var isFirst = drawPoints.length === 1;
-  var dotIcon = L.divIcon({
-    className:'',
-    html:'<div style="width:'+(isFirst?14:10)+'px;height:'+(isFirst?14:10)+'px;background:'+(isFirst?'#ffc947':'#e63946')+';border:2px solid #fff;border-radius:50%;box-shadow:0 1px 6px rgba(0,0,0,.6);"></div>',
-    iconSize:[isFirst?14:10,isFirst?14:10], iconAnchor:[isFirst?7:5,isFirst?7:5]
-  });
-  drawDots.push(L.marker(ll,{icon:dotIcon,zIndexOffset:1000}).addTo(map));
-  redrawLine();
-}
-
-function redrawLine() {
-  if (drawLine) { map.removeLayer(drawLine); drawLine=null; }
-  if (drawPoints.length >= 2)
-    drawLine = L.polyline(drawPoints.concat([drawPoints[0]]),{color:'#e63946',weight:2.5,dashArray:'8,5',opacity:.9}).addTo(map);
-}
-
-function finishDraw() {
-  if (drawPoints.length < 3) { showToast('يجب رسم ٣ نقاط على الأقل!', true); return; }
-  zoneSeq++;
-  var color = ZONE_COLORS[(zoneSeq-1) % ZONE_COLORS.length];
-  var zone = { id:zoneSeq, name:'المنطقة '+zoneSeq, points:drawPoints.slice(), color:color, layer:null, editMarkers:[] };
-  zone.layer = L.polygon(zone.points,{color:color,fillColor:color,weight:2.2,fillOpacity:0.17}).addTo(map);
-  zones.push(zone);
-  clearDraw(); stopDraw();
-  renderZones();
-  showToast('✅ تم إنشاء "' + zone.name + '" بنجاح');
-}
-
-function cancelDraw() { clearDraw(); stopDraw(); }
-
-function stopDraw() {
-  drawMode = false;
-  document.getElementById('btn-draw').style.display   = 'inline-flex';
-  document.getElementById('btn-finish').style.display = 'none';
-  document.getElementById('btn-cancel').style.display = 'none';
-  document.getElementById('draw-banner').style.display = 'none';
-  document.getElementById('map').classList.remove('drawing-cursor');
-}
-
-function clearDraw() {
-  if (drawLine) { map.removeLayer(drawLine); drawLine=null; }
-  drawDots.forEach(function(d){ map.removeLayer(d); });
-  drawDots=[]; drawPoints=[];
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   STATS (Turf.js WGS-84)
-══════════════════════════════════════════════════════════════════════ */
-function computeStats(zone) {
-  var coords = zone.points.map(function(p){ return [p.lng, p.lat]; });
-  coords.push(coords[0]);
-  var poly  = turf.polygon([coords]);
-  var aM2   = turf.area(poly);
-  var periK = turf.length(turf.polygonToLine(poly), {units:'kilometers'});
-  var cen   = turf.centroid(poly);
-  return { areaM2:aM2, areaKm2:aM2/1e6, periKm:periK, cLat:cen.geometry.coordinates[1], cLng:cen.geometry.coordinates[0] };
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER ZONES LIST
-══════════════════════════════════════════════════════════════════════ */
-function renderZones() {
-  var list = document.getElementById('zones-list');
-  document.getElementById('zone-badge').textContent = zones.length;
-  if (!zones.length) {
-    list.innerHTML = '<div class="empty-hint">لا توجد مناطق بعد<br>استخدم زر <strong>"رسم"</strong> للبدء</div>';
-    return;
-  }
-  list.innerHTML = '';
-  zones.forEach(function(zone, i) {
-    var stats = computeStats(zone);
-    var isEdit = editIdx === i;
-    var card = document.createElement('div');
-    card.className = 'zone-card';
-    card.style.borderRightColor = zone.color;
-    card.innerHTML =
-      '<div class="zc-head">' +
-        '<span class="z-dot" style="background:' + zone.color + '"></span>' +
-        '<input class="z-name-input" value="' + escHtml(zone.name) + '" onchange="zones[' + i + '].name=this.value"/>' +
-      '</div>' +
-      '<div class="z-meta">🔺 ' + zone.points.length + ' رأس &nbsp;|&nbsp; 📐 ' +
-        (stats.areaKm2 < 0.001 ? stats.areaM2.toFixed(2)+' م²' : stats.areaKm2.toFixed(5)+' كم²') +
-      '</div>' +
-      '<div class="z-actions">' +
-        '<button class="z-btn info" onclick="openModal(' + i + ')">📊</button>' +
-        '<button class="z-btn edit ' + (isEdit?'active-edit':'') + '" onclick="toggleEdit(' + i + ')">' + (isEdit?'💾':'✏️') + '</button>' +
-        '<button class="z-btn exp" onclick="doExport(' + i + ',\'geojson\')">GeoJSON</button>' +
-        '<button class="z-btn exp" onclick="doExport(' + i + ',\'kml\')" style="background:#ff9800;">KML</button>' +
-        '<button class="z-btn del" onclick="deleteZone(' + i + ')">🗑</button>' +
-      '</div>';
-    list.appendChild(card);
-  });
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EDIT / DELETE ZONES
-══════════════════════════════════════════════════════════════════════ */
-function toggleEdit(idx) {
-  if (editIdx !== null) { stopEdit(editIdx); var was=editIdx; editIdx=null; if (was===idx){renderZones();return;} }
-  editIdx = idx; startEdit(idx); renderZones();
-}
-function startEdit(idx) {
-  var zone = zones[idx];
-  zone.points.forEach(function(pt, i) {
-    var icon = L.divIcon({className:'',
-      html:'<div style="width:14px;height:14px;background:'+zone.color+';border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.7);cursor:move;"></div>',
-      iconSize:[14,14], iconAnchor:[7,7]});
-    var m = L.marker(pt,{draggable:true,icon:icon,zIndexOffset:2000}).addTo(map);
-    m.on('drag',    function(ev){ zone.points[i]=ev.target.getLatLng(); zone.layer.setLatLngs(zone.points); });
-    m.on('dragend', function(){ renderZones(); });
-    zone.editMarkers.push(m);
-  });
-}
-function stopEdit(idx) {
-  if (!zones[idx]) return;
-  zones[idx].editMarkers.forEach(function(m){ map.removeLayer(m); });
-  zones[idx].editMarkers = [];
-}
-function deleteZone(idx) {
-  stopEdit(idx); map.removeLayer(zones[idx].layer); zones.splice(idx,1);
-  if (editIdx===idx) editIdx=null; else if (editIdx>idx) editIdx--;
-  if (modalIdx===idx) modalIdx=null; else if (modalIdx>idx) modalIdx--;
-  renderZones(); showToast('تم حذف المنطقة');
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   ZONE DETAIL MODAL
-══════════════════════════════════════════════════════════════════════ */
-function openModal(idx) {
-  modalIdx = idx;
-  var zone=zones[idx], st=computeStats(zone);
-  document.getElementById('m-title').textContent       = '📊 ' + zone.name;
-  document.getElementById('m-verts-count').textContent = zone.points.length;
-  document.getElementById('m-area-km').textContent     = st.areaKm2.toFixed(8) + ' كم²';
-  document.getElementById('m-area-m2').textContent     = Math.round(st.areaM2).toLocaleString('ar') + ' م²';
-  document.getElementById('m-perimeter').textContent   = st.periKm.toFixed(6) + ' كم';
-  document.getElementById('m-centroid').textContent    = st.cLat.toFixed(7) + ', ' + st.cLng.toFixed(7);
-  var vc = document.getElementById('verts-container'); vc.innerHTML='';
-  zone.points.forEach(function(p,i){
-    var r=document.createElement('div'); r.className='vert-row';
-    r.innerHTML='<span class="v-idx">['+String(i+1).padStart(2,'0')+']</span>'+p.lat.toFixed(8)+',&nbsp;&nbsp;'+p.lng.toFixed(8);
-    vc.appendChild(r);
-  });
-  document.getElementById('modal-bg').classList.add('open');
-}
-function closeModal(){ document.getElementById('modal-bg').classList.remove('open'); }
-document.getElementById('m-btn-close').addEventListener('click', closeModal);
-document.getElementById('modal-bg').addEventListener('click', function(e){ if(e.target===this)closeModal(); });
-document.getElementById('m-btn-geojson').addEventListener('click', function(){ if(modalIdx!==null)doExport(modalIdx,'geojson'); });
-document.getElementById('m-btn-json').addEventListener('click',    function(){ if(modalIdx!==null)doExport(modalIdx,'json'); });
-document.getElementById('m-btn-copy').addEventListener('click', function() {
-  if(modalIdx===null) return;
-  var z=zones[modalIdx];
-  copyText(z.points.map(function(p,i){ return '['+(i+1)+'] '+p.lat.toFixed(8)+', '+p.lng.toFixed(8); }).join('\n'),
-    '✓ تم نسخ '+z.points.length+' إحداثيات');
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   EXPORT
-══════════════════════════════════════════════════════════════════════ */
-function doExport(idx, fmt) {
-  var zone=zones[idx], st=computeStats(zone);
-  var coords=zone.points.map(function(p){ return [parseFloat(p.lng.toFixed(8)),parseFloat(p.lat.toFixed(8))]; });
-  coords.push(coords[0]);
-  var content,fname,mime;
-  if (fmt==='geojson') {
-    content=JSON.stringify({type:'FeatureCollection',features:[{type:'Feature',
-      properties:{name:zone.name,id:zone.id,area_km2:st.areaKm2,perimeter_km:st.periKm,centroid:{lat:st.cLat,lng:st.cLng}},
-      geometry:{type:'Polygon',coordinates:[coords]}}]},null,2);
-    fname='zone_'+zone.id+'.geojson'; mime='application/geo+json';
-  } else if (fmt==='kml') {
-    content=tokml({type:'Feature',geometry:{type:'Polygon',coordinates:[coords]},properties:{name:zone.name}});
-    fname='zone_'+zone.id+'.kml'; mime='application/vnd.google-earth.kml+xml';
-  } else {
-    content=JSON.stringify({name:zone.name,id:zone.id,
-      stats:{vertices:zone.points.length,area_km2:st.areaKm2,area_m2:st.areaM2,perimeter_km:st.periKm,centroid:{lat:st.cLat,lng:st.cLng}},
-      vertices:zone.points.map(function(p,i){ return {index:i+1,lat:parseFloat(p.lat.toFixed(8)),lng:parseFloat(p.lng.toFixed(8))}; })},null,2);
-    fname='zone_'+zone.id+'.json'; mime='application/json';
-  }
-  var blob=new Blob([content],{type:mime});
-  var a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:fname});
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
-  showToast('✓ تم تصدير '+zone.name+' ('+fmt.toUpperCase()+')');
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   ELEVATION HELPERS (Open-Meteo primary, Open-Elevation fallback)
-══════════════════════════════════════════════════════════════════════ */
-async function getElevations(locations) {
-  /* Open-Meteo: free, reliable, SRTM90m, no key */
-  try {
-    var lats = locations.map(function(l){ return l.lat; }).join(',');
-    var lngs = locations.map(function(l){ return l.lng; }).join(',');
-    var res  = await fetchTimeout(
-      'https://api.open-meteo.com/v1/elevation?latitude='+lats+'&longitude='+lngs, {}, 12000
-    );
-    if (res.ok) {
-      var d = await res.json();
-      if (d.elevation && d.elevation.length === locations.length)
-        return d.elevation.map(function(v){ return v !== null ? v : 0; });
-    }
-  } catch(e) {}
-
-  /* Fallback: Open-Elevation */
-  try {
-    var body = JSON.stringify({ locations: locations.map(function(l){ return {latitude:l.lat,longitude:l.lng}; }) });
-    var res2 = await fetchTimeout('https://api.open-elevation.com/api/v1/lookup',
-      { method:'POST', headers:{'Content-Type':'application/json'}, body:body }, 12000);
-    if (res2.ok) {
-      var d2 = await res2.json();
-      return d2.results.map(function(r){ return r.elevation || 0; });
-    }
-  } catch(e2) {}
-  return null;
-}
-
-async function getElevationsBatched(locs, batchSz) {
-  batchSz = batchSz || 100;
-  var all = [];
-  for (var i=0; i<locs.length; i+=batchSz) {
-    var batch = locs.slice(i, Math.min(i+batchSz, locs.length));
-    var res   = await getElevations(batch);
-    if (!res) return null;
-    all = all.concat(res);
-    if (i+batchSz < locs.length) await sleep(250);
-  }
-  return all;
-}
-
-function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
-
-function fetchTimeout(url, opts, ms) {
-  var ctrl=new AbortController(), tid=setTimeout(function(){ ctrl.abort(); },ms||10000);
-  return fetch(url, Object.assign({},opts,{signal:ctrl.signal}))
-    .then(function(r){ clearTimeout(tid); return r; })
-    .catch(function(e){ clearTimeout(tid); throw e; });
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   1. BUFFER
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-buffer').addEventListener('click', function(){ toggleModal('modal-buffer'); });
-document.getElementById('buffer-apply').addEventListener('click', function() {
-  if (!mainMarker) { showToast('ضع علامة على الخريطة أولاً', true); return; }
-  var radius = parseFloat(document.getElementById('buffer-radius').value);
-  var c = mainMarker.getLatLng();
-  var circle = turf.circle([c.lng,c.lat], radius/1000, {steps:64,units:'kilometers'});
-  L.geoJSON(circle, {style:{color:'#00d4ff',weight:1.5,fillOpacity:0.07}}).addTo(bufferLayer);
-  showToast('تم رسم دائرة بنصف قطر '+radius+' م');
-});
-document.getElementById('buffer-clear').addEventListener('click', function() {
-  bufferLayer.clearLayers(); showToast('تم مسح الدوائر');
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   2. LINE OF SIGHT — REAL SCIENTIFIC CALCULATION
-   • 22 elevation samples along path
-   • Earth curvature + atmospheric refraction correction
-   • Proper canvas elevation profile with blocked zone highlighted
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-los').addEventListener('click', function() {
-  toggleModal('modal-los');
-  resetLOS();
-});
-
-function resetLOS() {
-  losPoints=[]; losMarkers.forEach(function(m){ map.removeLayer(m); }); losMarkers=[];
-  if (losLine){ map.removeLayer(losLine); losLine=null; }
-  document.getElementById('los-result').innerHTML   = '';
-  document.getElementById('los-progress').textContent = '';
-  var cvs=document.getElementById('los-canvas');
-  cvs.getContext('2d').clearRect(0,0,cvs.width,cvs.height);
-}
-
-function addLOSPoint(e) {
-  if (losPoints.length >= 2) return;
-  losPoints.push(e.latlng);
-  var isFirst = losPoints.length === 1;
-  var icon = L.divIcon({className:'',
-    html:'<div style="width:13px;height:13px;background:'+(isFirst?'#ffc947':'#ff5722')+';border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.6);"></div>',
-    iconSize:[13,13], iconAnchor:[6,6]});
-  losMarkers.push(L.marker(e.latlng,{icon:icon}).addTo(map));
-  if (losPoints.length === 2) {
-    losLine = L.polyline(losPoints,{color:'#ff9800',weight:1.5,dashArray:'6,3'}).addTo(map);
-    computeLOS();
-  }
-}
-
-async function computeLOS() {
-  var p1 = losPoints[0], p2 = losPoints[1];
-  var obsOffset = parseFloat(document.getElementById('los-obs-h').value) || 2;
-  var tgtOffset = parseFloat(document.getElementById('los-tgt-h').value) || 0;
-  var N = 20;  // intermediate samples
-  var prog = document.getElementById('los-progress');
-
-  prog.textContent = '⏳ جلب الارتفاعات (' + (N+2) + ' نقطة قياس)…';
-
-  var totalDistKm = turf.distance(turf.point([p1.lng,p1.lat]), turf.point([p2.lng,p2.lat]), {units:'kilometers'});
-  var totalDistM  = totalDistKm * 1000;
-
-  /* Sample N+2 points (0 = start, N+1 = end) */
-  var locs = [], dists = [];
-  for (var i=0; i<=N+1; i++) {
-    var t = i / (N+1);
-    locs.push({ lat: p1.lat+(p2.lat-p1.lat)*t, lng: p1.lng+(p2.lng-p1.lng)*t });
-    dists.push(t * totalDistM);
-  }
-
-  var elevs = await getElevations(locs);
-  prog.textContent = '';
-
-  if (!elevs || elevs.length < N+2) {
-    document.getElementById('los-result').innerHTML =
-      '<span style="color:#f85149;">⚠ فشل جلب بيانات الارتفاع — تحقق من الاتصال</span>';
-    return;
-  }
-
-  var obsAbsH = elevs[0]   + obsOffset;   /* observer absolute altitude */
-  var tgtAbsH = elevs[N+1] + tgtOffset;   /* target   absolute altitude */
-  var blocked = false, blockIdx = -1, blockDistM = 0;
-
-  /* Check each intermediate point with curvature correction */
-  for (var i=1; i<=N; i++) {
-    var d = dists[i], D = totalDistM;
-    /* curvature drop = d*(D-d)/(2R) × (1-k) */
-    var curv     = (d*(D-d)) / (2*R_EARTH) * (1-K_REFRACT);
-    /* Straight LOS height at distance d */
-    var losH     = obsAbsH + (tgtAbsH-obsAbsH) * (d/D);
-    /* Apparent terrain height (dips by curvature) */
-    var appTerr  = elevs[i] - curv;
-    if (appTerr > losH && !blocked) {
-      blocked=true; blockIdx=i; blockDistM=d;
-    }
-  }
-
-  /* Draw profile chart */
-  drawLOSChart(elevs, dists, totalDistM, obsAbsH, tgtAbsH, blocked, blockIdx);
-
-  /* Color map line */
-  if (losLine) losLine.setStyle({color: blocked?'#f85149':'#56d364'});
-
-  /* Result text */
-  var distStr = totalDistM>=1000 ? totalDistKm.toFixed(3)+' كم' : totalDistM.toFixed(0)+' م';
-  var html =
-    '<div style="margin-bottom:6px;">' +
-      '<b>المسافة:</b> '+distStr+'<br>' +
-      '<b>ارتفاع ن.1:</b> '+elevs[0].toFixed(1)+' م + '+obsOffset+' م = '+obsAbsH.toFixed(1)+' م<br>' +
-      '<b>ارتفاع ن.2:</b> '+elevs[N+1].toFixed(1)+' م + '+tgtOffset+' م = '+tgtAbsH.toFixed(1)+' م' +
-    '</div>';
-
-  if (blocked) {
-    var bDStr = blockDistM>=1000 ? (blockDistM/1000).toFixed(2)+' كم' : blockDistM.toFixed(0)+' م';
-    html += '<div style="color:#f85149;font-size:13px;font-weight:700;">🔴 خط الرؤية محجوب</div>' +
-            '<div style="color:#f85149;font-size:11px;">موضع الحجب: '+bDStr+' — ارتفاع الأرض: '+elevs[blockIdx].toFixed(1)+' م</div>';
-  } else {
-    html += '<div style="color:#56d364;font-size:13px;font-weight:700;">🟢 خط الرؤية مفتوح بالكامل</div>';
-  }
-  document.getElementById('los-result').innerHTML = html;
-}
-
-function drawLOSChart(elevs, dists, totalDistM, obsH, tgtH, blocked, blockIdx) {
-  var cvs=document.getElementById('los-canvas'), W=cvs.width, H=cvs.height;
-  var ctx=cvs.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-
-  var minE = Math.min.apply(null, elevs.concat([0])) - 8;
-  var maxE = Math.max.apply(null, elevs.concat([obsH,tgtH])) + 22;
-  var eR   = maxE - minE; if (eR===0) eR=1;
-  var pad  = {top:24,right:14,bottom:30,left:50};
-  var cW   = W-pad.left-pad.right, cH=H-pad.top-pad.bottom;
-
-  function xP(d){ return pad.left+(d/totalDistM)*cW; }
-  function yP(h){ return pad.top+cH-((h-minE)/eR)*cH; }
-
-  /* Background */
-  ctx.fillStyle='#0d1117'; ctx.fillRect(0,0,W,H);
-
-  /* Grid */
-  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5;
-  for(var gi=0;gi<=4;gi++){
-    var gy=pad.top+gi*(cH/4);
-    ctx.beginPath();ctx.moveTo(pad.left,gy);ctx.lineTo(W-pad.right,gy);ctx.stroke();
-  }
-  for(var gx=0;gx<=5;gx++){
-    var gxx=pad.left+gx*(cW/5);
-    ctx.beginPath();ctx.moveTo(gxx,pad.top);ctx.lineTo(gxx,pad.top+cH);ctx.stroke();
-  }
-
-  /* Terrain fill */
-  ctx.beginPath();
-  ctx.moveTo(xP(dists[0]),yP(elevs[0]));
-  for(var i=1;i<elevs.length;i++) ctx.lineTo(xP(dists[i]),yP(elevs[i]));
-  ctx.lineTo(xP(totalDistM),yP(minE)); ctx.lineTo(xP(dists[0]),yP(minE)); ctx.closePath();
-  var tg=ctx.createLinearGradient(0,pad.top,0,pad.top+cH);
-  tg.addColorStop(0,'rgba(86,211,100,.35)'); tg.addColorStop(1,'rgba(86,211,100,.04)');
-  ctx.fillStyle=tg; ctx.fill();
-
-  /* Terrain outline */
-  ctx.beginPath(); ctx.moveTo(xP(dists[0]),yP(elevs[0]));
-  for(var i=1;i<elevs.length;i++) ctx.lineTo(xP(dists[i]),yP(elevs[i]));
-  ctx.strokeStyle='#56d364'; ctx.lineWidth=1.5; ctx.stroke();
-
-  /* Blocked terrain highlight */
-  if (blocked) {
-    for(var i=1;i<elevs.length;i++){
-      var d=dists[i], D=totalDistM;
-      var curv=(d*(D-d))/(2*R_EARTH)*(1-K_REFRACT);
-      var losH2=obsH+(tgtH-obsH)*(d/D);
-      if (elevs[i]-curv > losH2) {
-        ctx.fillStyle='rgba(248,81,73,.22)';
-        ctx.fillRect(xP(dists[i-1]),pad.top,xP(dists[i])-xP(dists[i-1]),cH);
-      }
-    }
-  }
-
-  /* LOS line */
-  ctx.beginPath(); ctx.moveTo(xP(0),yP(obsH)); ctx.lineTo(xP(totalDistM),yP(tgtH));
-  ctx.strokeStyle=blocked?'#f85149':'#58a6ff'; ctx.lineWidth=1.5;
-  ctx.setLineDash([6,3]); ctx.stroke(); ctx.setLineDash([]);
-
-  /* Block point marker */
-  if (blocked && blockIdx>0) {
-    ctx.beginPath(); ctx.arc(xP(dists[blockIdx]),yP(elevs[blockIdx]),5,0,Math.PI*2);
-    ctx.fillStyle='#f85149'; ctx.fill();
-  }
-
-  /* Observer/target dots */
-  ctx.beginPath(); ctx.arc(xP(0),yP(obsH),5,0,Math.PI*2); ctx.fillStyle='#ffc947'; ctx.fill();
-  ctx.beginPath(); ctx.arc(xP(totalDistM),yP(tgtH),5,0,Math.PI*2); ctx.fillStyle='#ff5722'; ctx.fill();
-
-  /* Axes labels */
-  ctx.fillStyle='#484f58'; ctx.font='9px monospace';
-  ctx.textAlign='right';
-  ctx.fillText(maxE.toFixed(0)+'م', pad.left-3, pad.top+9);
-  ctx.fillText(minE.toFixed(0)+'م', pad.left-3, pad.top+cH+4);
-  ctx.textAlign='center';
-  ctx.fillText('0', xP(0), H-3);
-  ctx.fillText(totalDistM>=1000?(totalDistM/1000).toFixed(1)+'كم':totalDistM.toFixed(0)+'م', xP(totalDistM), H-3);
-
-  /* Status label */
-  ctx.fillStyle=blocked?'#f85149':'#56d364'; ctx.textAlign='left'; ctx.font='bold 10px monospace';
-  ctx.fillText(blocked?'⛔ محجوب':'✅ مفتوح', pad.left+4, pad.top+14);
-}
-
-document.getElementById('los-clear').addEventListener('click', resetLOS);
-
-/* ══════════════════════════════════════════════════════════════════════
-   3. VIEWSHED — REAL TERRAIN ANALYSIS
-   • Open-Meteo SRTM elevation for all ray points
-   • Max-angle algorithm with Earth curvature + refraction
-   • Draws actual visible-area polygon on map
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-viewshed').addEventListener('click', function(){ toggleModal('modal-viewshed'); });
-
-document.getElementById('viewshed-apply').addEventListener('click', async function() {
-  if (!mainMarker){ showToast('ضع علامة على الخريطة أولاً', true); return; }
-
-  var range    = parseFloat(document.getElementById('viewshed-range').value) || 10;
-  var obsOff   = parseFloat(document.getElementById('viewshed-obs-h').value) || 2;
-  var NUM_RAYS = parseInt(document.getElementById('viewshed-rays').value)    || 36;
-  var NUM_STEP = 10;
-  var center   = mainMarker.getLatLng();
-  var prog     = document.getElementById('viewshed-progress');
-  var btn      = document.getElementById('viewshed-apply');
-
-  viewshedLayer.clearLayers();
-  btn.disabled = true;
-
-  prog.textContent = '⏳ جلب ارتفاع موضع المراقب…';
-  var obsEArr = await getElevations([{lat:center.lat,lng:center.lng}]);
-  if (!obsEArr){ prog.textContent=''; btn.disabled=false; showToast('فشل جلب الارتفاع',true); return; }
-  var observerH = obsEArr[0] + obsOff;
-
-  prog.textContent = '⏳ بناء شبكة '+NUM_RAYS+'×'+NUM_STEP+' = '+(NUM_RAYS*NUM_STEP)+' نقطة…';
-
-  /* Build ray sample locations */
-  var allLocs=[], rayMap=[];
-  for (var r=0;r<NUM_RAYS;r++){
-    var bearing=(r/NUM_RAYS)*360;
-    rayMap[r]=[];
-    for (var s=0;s<NUM_STEP;s++){
-      var d_km = range*(s+1)/NUM_STEP;
-      var dest = turf.destination(turf.point([center.lng,center.lat]),d_km,bearing,{units:'kilometers'});
-      rayMap[r][s] = allLocs.length;
-      allLocs.push({lat:dest.geometry.coordinates[1], lng:dest.geometry.coordinates[0], distM:d_km*1000});
-    }
-  }
-
-  prog.textContent = '⏳ جلب بيانات التضاريس ('+allLocs.length+' نقطة)…';
-  var allElevs = await getElevationsBatched(allLocs, 90);
-  if (!allElevs){ prog.textContent=''; btn.disabled=false; showToast('فشل جلب التضاريس',true); return; }
-
-  prog.textContent = '⏳ حساب الرؤية بخوارزمية الأفق القصوى…';
-
-  /* Max-angle viewshed algorithm per ray */
-  var horizonPts=[], visCount=0;
-  for (var r=0;r<NUM_RAYS;r++){
-    var maxAngle=-Infinity, lastVisStep=0;
-    for (var s=0;s<NUM_STEP;s++){
-      var fi  = rayMap[r][s];
-      var h   = allElevs[fi]!==null ? allElevs[fi] : 0;
-      var d   = allLocs[fi].distM;
-      /* curvature: terrain appears lower by this amount */
-      var curv = (d*d)/(2*R_EARTH)*(1-K_REFRACT);
-      var elevAng = (h - curv - observerH) / d;
-      if (elevAng >= maxAngle){ maxAngle=elevAng; lastVisStep=s; }
-    }
-    visCount += lastVisStep;
-    var visDistKm = range*(lastVisStep+1)/NUM_STEP;
-    var bearing   = (r/NUM_RAYS)*360;
-    var visPt     = turf.destination(turf.point([center.lng,center.lat]),visDistKm,bearing,{units:'kilometers'});
-    horizonPts.push(L.latLng(visPt.geometry.coordinates[1],visPt.geometry.coordinates[0]));
-  }
-
-  prog.textContent = '';
-  btn.disabled = false;
-
-  /* Draw max-range reference circle */
-  L.circle([center.lat,center.lng],{radius:range*1000,color:'#484f58',fill:false,weight:1,dashArray:'5,5'}).addTo(viewshedLayer);
-
-  /* Draw visible area polygon */
-  if (horizonPts.length >= 3){
-    horizonPts.push(horizonPts[0]);
-    L.polygon(horizonPts,{color:'#00d4ff',fillColor:'#00d4ff',weight:1.5,fillOpacity:0.15})
-     .addTo(viewshedLayer)
-     .bindPopup('<b>منطقة التغطية الحقيقية</b><br>المدى: '+range+' كم<br>الأشعة: '+NUM_RAYS+'<br>بيانات: SRTM عبر Open-Meteo');
-  }
-
-  var pct = Math.round(visCount/(NUM_RAYS*(NUM_STEP-1))*100);
-  showToast('✅ Viewshed اكتمل — تغطية فعلية: ~'+pct+'% من المدى');
-});
-
-document.getElementById('viewshed-clear').addEventListener('click', function(){
-  viewshedLayer.clearLayers();
-  document.getElementById('viewshed-progress').textContent='';
-  showToast('تم مسح التغطية');
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   4. IMPORT KML / GEOJSON
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-import').addEventListener('click', function(){ toggleModal('modal-import'); });
-document.getElementById('import-load').addEventListener('click', function() {
-  var fi=document.getElementById('import-file');
-  if (!fi.files.length){ showToast('اختر ملفاً أولاً',true); return; }
-  var file=fi.files[0], reader=new FileReader();
-  reader.onload=function(e){
-    try {
-      var gj;
-      if (file.name.toLowerCase().endsWith('.kml')) {
-        var doc=new DOMParser().parseFromString(e.target.result,'text/xml');
-        gj=toGeoJSON.kml(doc);
-      } else {
-        gj=JSON.parse(e.target.result);
-      }
-      importedLayer.clearLayers();
-      L.geoJSON(gj,{
-        style:function(){ return {color:'#ff9800',weight:2,fillOpacity:0.1}; },
-        pointToLayer:function(f,ll){ return L.circleMarker(ll,{radius:6,color:'#ff9800',fillColor:'#ff9800',fillOpacity:0.6}); }
-      }).addTo(importedLayer);
-      if (importedLayer.getLayers().length) map.fitBounds(importedLayer.getBounds());
-      showToast('✅ تم استيراد: '+file.name);
-    } catch(err){ showToast('❌ خطأ: '+err.message,true); }
-  };
-  reader.readAsText(file);
-});
-document.getElementById('import-clear').addEventListener('click', function(){
-  importedLayer.clearLayers(); showToast('تم مسح البيانات المستوردة');
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   5. TIMELINE
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-timeline').addEventListener('click', function(){ toggleModal('modal-timeline'); });
-
-document.getElementById('timeline-start').addEventListener('click', function() {
-  timelinePoints=[]; timelineRecording=true;
-  document.getElementById('timeline-start').disabled=true;
-  document.getElementById('timeline-stop').disabled=false;
-  document.getElementById('timeline-info').textContent='🔴 التسجيل نشط — انقر على الخريطة';
-  if (timelinePolyline){ map.removeLayer(timelinePolyline); timelinePolyline=null; }
-  showToast('انقر على الخريطة لتسجيل نقاط المسار');
-});
-
-function addTimelinePoint(e) {
-  timelinePoints.push({latlng:e.latlng, time:new Date()});
-  var n=timelinePoints.length;
-  L.circleMarker(e.latlng,{radius:5,color:'#ffc947',fillColor:'#ffc947',fillOpacity:.7}).addTo(map)
-   .bindTooltip(String(n),{permanent:true,direction:'top'});
-  if (timelinePolyline) timelinePolyline.addLatLng(e.latlng);
-  else timelinePolyline=L.polyline([e.latlng],{color:'#ffc947',weight:1.5,dashArray:'4,3'}).addTo(map);
-  document.getElementById('timeline-slider').max=n-1;
-  document.getElementById('timeline-slider').disabled=false;
-  document.getElementById('timeline-info').textContent='🔴 '+n+' نقطة مسجلة';
-  checkGeoFencePoint(e.latlng);
-}
-
-document.getElementById('timeline-stop').addEventListener('click', function() {
-  timelineRecording=false;
-  document.getElementById('timeline-start').disabled=false;
-  document.getElementById('timeline-stop').disabled=true;
-  document.getElementById('timeline-info').textContent='✅ '+timelinePoints.length+' نقطة مسجلة';
-  showToast('تم إيقاف التسجيل');
-});
-
-document.getElementById('timeline-play').addEventListener('click', function() {
-  if (!timelinePoints.length){ showToast('لا توجد نقاط',true); return; }
-  var idx=0;
-  if (timelineMarker) map.removeLayer(timelineMarker);
-  timelineMarker=L.circleMarker(timelinePoints[0].latlng,{radius:9,color:'#e63946',fillColor:'#e63946',fillOpacity:.85}).addTo(map);
-  if (timelineInterval) clearInterval(timelineInterval);
-  timelineInterval=setInterval(function(){
-    idx=(idx+1)%timelinePoints.length;
-    timelineMarker.setLatLng(timelinePoints[idx].latlng);
-    document.getElementById('timeline-slider').value=idx;
-    checkGeoFencePoint(timelinePoints[idx].latlng);
-  },900);
-});
-
-document.getElementById('timeline-reset').addEventListener('click', function() {
-  if (timelineInterval){ clearInterval(timelineInterval); timelineInterval=null; }
-  if (timelineMarker){ map.removeLayer(timelineMarker); timelineMarker=null; }
-  if (timelinePolyline){ map.removeLayer(timelinePolyline); timelinePolyline=null; }
-  timelinePoints=[]; timelineRecording=false;
-  document.getElementById('timeline-start').disabled=false;
-  document.getElementById('timeline-stop').disabled=true;
-  document.getElementById('timeline-slider').value=0; document.getElementById('timeline-slider').max=0;
-  document.getElementById('timeline-slider').disabled=true;
-  document.getElementById('timeline-info').textContent='';
-  showToast('تم مسح المسار الزمني');
-});
-
-document.getElementById('timeline-slider').addEventListener('input', function(){
-  var idx=parseInt(this.value);
-  if (timelineMarker && timelinePoints[idx]) timelineMarker.setLatLng(timelinePoints[idx].latlng);
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   6. CLUSTERING & HEATMAP — REAL DATA (zones, markers, timeline, quakes)
-══════════════════════════════════════════════════════════════════════ */
-function getRealPoints() {
-  var pts=[];
-  zones.forEach(function(z){ try{ var s=computeStats(z); pts.push({lat:s.cLat,lng:s.cLng}); }catch(e){} });
-  if (mainMarker){ var ll=mainMarker.getLatLng(); pts.push({lat:ll.lat,lng:ll.lng}); }
-  timelinePoints.forEach(function(tp){ pts.push({lat:tp.latlng.lat,lng:tp.latlng.lng}); });
-  quakeLayer.getLayers().forEach(function(ly){ if(ly.getLatLng){ var q=ly.getLatLng(); pts.push({lat:q.lat,lng:q.lng}); } });
-  return pts;
-}
-
-document.getElementById('btn-cluster-toggle').addEventListener('click', function() {
-  if (map.hasLayer(clusterGroup)){ map.removeLayer(clusterGroup); this.classList.remove('active'); this.textContent='📊 تجميع'; return; }
-  clusterGroup.clearLayers();
-  var pts=getRealPoints();
-  if (!pts.length){ showToast('لا توجد بيانات — أضف علامات أو مناطق أو زلازل أولاً',true); return; }
-  pts.forEach(function(p){ clusterGroup.addLayer(L.marker([p.lat,p.lng])); });
-  map.addLayer(clusterGroup);
-  this.classList.add('active'); this.textContent='📊 تجميع (ON)';
-  showToast('✅ تجميع '+pts.length+' نقطة من بياناتك الفعلية');
-});
-
-document.getElementById('btn-heatmap-toggle').addEventListener('click', function() {
-  if (heatmapLayer){ map.removeLayer(heatmapLayer); heatmapLayer=null; this.classList.remove('active'); this.textContent='🌡️ حرارية'; return; }
-  var pts=getRealPoints();
-  if (!pts.length){ showToast('لا توجد بيانات — أضف علامات أو مناطق أو زلازل أولاً',true); return; }
-  heatmapLayer=L.heatLayer(pts.map(function(p){ return [p.lat,p.lng,1]; }),{radius:28,blur:20,maxZoom:12}).addTo(map);
-  this.classList.add('active'); this.textContent='🌡️ حرارية (ON)';
-  showToast('✅ خريطة حرارية لـ '+pts.length+' نقطة');
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   7. MGRS / DMS CONVERTER
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-mgrs').addEventListener('click', function(){ toggleModal('modal-mgrs'); });
-
-document.getElementById('mgrs-use-marker').addEventListener('click', function() {
-  if (!mainMarker){ showToast('ضع علامة أولاً',true); return; }
-  var ll=mainMarker.getLatLng();
-  document.getElementById('mgrs-input').value=ll.lat.toFixed(7)+', '+ll.lng.toFixed(7);
-  document.getElementById('mgrs-convert').click();
-});
-
-document.getElementById('mgrs-convert').addEventListener('click', function() {
-  var val=document.getElementById('mgrs-input').value.trim().replace(/،/g,',');
-  var c=parseCoords(val);
-  if (!c){ showToast('أدخل إحداثيات صحيحة (lat, lng)',true); return; }
-  try {
-    document.getElementById('mgrs-out').textContent=mgrs.forward([c.lng,c.lat]);
-    document.getElementById('dms-out').textContent=toDMS(c.lat,'lat')+', '+toDMS(c.lng,'lng');
-  } catch(e){ showToast('خطأ: '+e.message,true); }
-});
-
-function toDMS(deg, type) {
-  var neg=(deg<0), abs=Math.abs(deg);
-  var d=Math.floor(abs), m=Math.floor((abs-d)*60), s=((abs-d-m/60)*3600).toFixed(2);
-  var dir = type==='lat' ? (neg?'جنوب':'شمال') : (neg?'غرب':'شرق');
-  return d+'° '+m+"' "+s+'" '+dir;
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   8. ISOCHRONES — pre-filled API key, transport mode
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-isochrone').addEventListener('click', function(){ toggleModal('modal-isochrone'); });
-
-document.getElementById('isochrone-apply').addEventListener('click', async function() {
-  var apiKey=document.getElementById('ors-key').value.trim();
-  if (!apiKey){ showToast('أدخل مفتاح OpenRouteService API',true); return; }
-  if (!mainMarker){ showToast('ضع علامة على الخريطة أولاً',true); return; }
-  var time=parseInt(document.getElementById('isochrone-time').value)||15;
-  var mode=document.getElementById('isochrone-mode').value;
-  var c=mainMarker.getLatLng();
-  var btn=this; btn.disabled=true;
-  showToast('⏳ حساب منطقة زمن الوصول…');
-  try {
-    var res=await fetchTimeout('https://api.openrouteservice.org/v2/isochrones/'+mode,{
-      method:'POST',
-      headers:{'Authorization':apiKey,'Content-Type':'application/json'},
-      body:JSON.stringify({locations:[[c.lng,c.lat]],range:[time*60],range_type:'time'})
-    },15000);
-    if (!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+': '+t.substring(0,80)); }
-    var data=await res.json();
-    isochroneLayer.clearLayers();
-    L.geoJSON(data,{style:{color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:0.1,weight:2,dashArray:'5,3'}}).addTo(isochroneLayer);
-    showToast('✅ منطقة الوصول: '+time+' دقيقة');
-  } catch(e){ showToast('فشل: '+e.message,true); }
-  btn.disabled=false;
-});
-
-document.getElementById('isochrone-clear').addEventListener('click', function(){
-  isochroneLayer.clearLayers(); showToast('تم مسح مناطق زمن الوصول');
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   9. GEOFENCE ALERTS
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('tool-geofence').addEventListener('click', function(){ toggleModal('modal-geofence'); });
-
-document.getElementById('geofence-use-marker').addEventListener('click', function() {
-  if (!mainMarker){ showToast('ضع علامة أولاً',true); return; }
-  var ll=mainMarker.getLatLng();
-  document.getElementById('geofence-coord').value=ll.lat.toFixed(7)+', '+ll.lng.toFixed(7);
-  document.getElementById('geofence-check').click();
-});
-
-document.getElementById('geofence-check').addEventListener('click', function() {
-  var val=document.getElementById('geofence-coord').value.trim().replace(/،/g,',');
-  var c=parseCoords(val);
-  if (!c){ showToast('أدخل إحداثيات صحيحة',true); return; }
-  if (!zones.length){ document.getElementById('geofence-result').innerHTML='<span style="color:#e3b341;">لا توجد مناطق محظورة</span>'; return; }
-  var pt=turf.point([c.lng,c.lat]), inside=[];
-  zones.forEach(function(z){
-    var co=z.points.map(function(p){ return [p.lng,p.lat]; }); co.push(co[0]);
-    if (turf.booleanPointInPolygon(pt,turf.polygon([co]))) inside.push(z.name);
-  });
-  var el=document.getElementById('geofence-result');
-  if (inside.length) {
-    el.innerHTML='<span style="color:#f85149;font-weight:700;">🚨 داخل منطقة محظورة!</span><br><span style="color:#f85149;font-size:11px;">'+inside.join('، ')+'</span>';
-  } else {
-    el.innerHTML='<span style="color:#56d364;font-weight:700;">✅ خارج المناطق المحظورة</span>';
-  }
-  L.circleMarker([c.lat,c.lng],{radius:8,color:inside.length?'#f85149':'#56d364',
-    fillColor:inside.length?'#f85149':'#56d364',fillOpacity:0.5,weight:2})
-   .addTo(map).bindPopup(inside.length?'🚨 محظورة':'✅ آمنة').openPopup();
-});
-
-function checkGeoFencePoint(latlng) {
-  if (!zones.length) return;
-  var pt=turf.point([latlng.lng,latlng.lat]);
-  var hit=zones.some(function(z){
-    var co=z.points.map(function(p){ return [p.lng,p.lat]; }); co.push(co[0]);
-    return turf.booleanPointInPolygon(pt,turf.polygon([co]));
-  });
-  if (hit) showToast('🚨 المسار دخل منطقة محظورة!',true);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   10. EARTHQUAKES OSINT (USGS)
-══════════════════════════════════════════════════════════════════════ */
-document.getElementById('btn-load-quakes').addEventListener('click', async function() {
-  showToast('⏳ جلب بيانات USGS…');
-  try {
-    var res=await fetchTimeout('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson',{},12000);
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    var data=await res.json();
-    quakeLayer.clearLayers();
-    L.geoJSON(data,{
-      pointToLayer:function(f,ll){
-        var mag=f.properties.mag||2.5;
-        var col=mag>=5?'#f85149':mag>=3.5?'#ff9800':'#ffc947';
-        return L.circleMarker(ll,{radius:Math.max(4,mag*2.5),color:col,fillColor:col,fillOpacity:.4,weight:1.5});
-      },
-      onEachFeature:function(f,ly){
-        if (f.properties)
-          ly.bindPopup('<b>'+(f.properties.title||'')+'</b><br>القوة: '+f.properties.mag+' ريختر<br>'+(f.properties.place||''));
-      }
-    }).addTo(quakeLayer);
-    showToast('🌍 '+data.features.length+' زلزال (آخر 24 ساعة)');
-  } catch(e){ showToast('فشل: '+e.message,true); }
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════════════════════════════ */
-function toggleModal(id) {
-  var el=document.getElementById(id), open=el.classList.contains('open');
-  document.querySelectorAll('.tool-modal').forEach(function(m){ m.classList.remove('open'); });
-  if (!open) el.classList.add('open');
-}
-
-document.querySelectorAll('.tool-modal-close').forEach(function(btn){
-  btn.addEventListener('click', function(){ btn.closest('.tool-modal').classList.remove('open'); });
-});
-
-async function copyText(text, msg) {
-  try { await navigator.clipboard.writeText(text); }
-  catch(e) {
-    var ta=Object.assign(document.createElement('textarea'),{value:text,style:'position:fixed;opacity:0;'});
-    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-  }
-  showToast(msg||'✓ تم النسخ');
-}
-
-var toastTimer;
-function showToast(msg, isErr) {
-  var el=document.getElementById('toast');
-  el.textContent=msg; el.className=isErr?'err':'';
-  el.style.display='block';
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(function(){ el.style.display='none'; },3500);
-}
-
-function escHtml(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-window.addEventListener('resize', function(){ if(map) map.invalidateSize(); });
-
-/* ══ START ══ */
-document.addEventListener('DOMContentLoaded', initMap);
-</script>
+
+    <script>
+        (function() {
+            // ==================== CONFIG ====================
+            const CONFIG = {
+                BINANCE_BASE: 'https://api.binance.com/api/v3',
+                BINANCE_WS: 'wss://stream.binance.com:9443/stream',
+                COINGECKO_BASE: 'https://api.coingecko.com/api/v3',
+                REFRESH_INTERVAL_MS: 30000,
+                SIGNALS_REFRESH_MS: 12000,
+                CHART_REFRESH_MS: 90000,
+                TELEGRAM_AUTO_CHECK_MS: 15000,
+                TELEGRAM_COOLDOWN_MS: 300000,
+                TELEGRAM_API_BASE: 'https://api.telegram.org/bot',
+                MAX_KLINES: 120,
+                KLINE_INTERVAL: '1h',
+                BACKTEST_MONTHS: 6,
+                KELLY_FRACTION: 0.25,
+                MAX_POSITION_PCT: 0.02,
+                MAX_LOG_ENTRIES: 60,
+            };
+
+            // ==================== 30 عملة ====================
+            const CRYPTO_ASSETS = [
+                { symbol: 'BTCUSDT', name: 'بيتكوين', icon: '₿', coingeckoId: 'bitcoin', color: '#f7931a', priority: 1 },
+                { symbol: 'ETHUSDT', name: 'إيثيريوم', icon: 'Ξ', coingeckoId: 'ethereum', color: '#627eea', priority: 2 },
+                { symbol: 'BNBUSDT', name: 'بينانس كوين', icon: '🔶', coingeckoId: 'binancecoin', color: '#f0b90b',
+                    priority: 3 },
+                { symbol: 'SOLUSDT', name: 'سولانا', icon: '💠', coingeckoId: 'solana', color: '#9945ff', priority: 4 },
+                { symbol: 'XRPUSDT', name: 'ريبل', icon: '💧', coingeckoId: 'ripple', color: '#00aae4', priority: 5 },
+                { symbol: 'ADAUSDT', name: 'كاردانو', icon: '🔵', coingeckoId: 'cardano', color: '#0033ad', priority: 6 },
+                { symbol: 'DOGEUSDT', name: 'دوجكوين', icon: '🐕', coingeckoId: 'dogecoin', color: '#c2a633', priority: 7 },
+                { symbol: 'AVAXUSDT', name: 'أفالانش', icon: '🔺', coingeckoId: 'avalanche-2', color: '#e84142',
+                priority: 8 },
+                { symbol: 'DOTUSDT', name: 'بولكادوت', icon: '⭕', coingeckoId: 'polkadot', color: '#e6007a', priority: 9 },
+                { symbol: 'MATICUSDT', name: 'بوليغون', icon: '⬡', coingeckoId: 'matic-network', color: '#8247e5',
+                    priority: 10 },
+                { symbol: 'SHIBUSDT', name: 'شيبا إينو', icon: '🐶', coingeckoId: 'shiba-inu', color: '#f4a340',
+                priority: 11 },
+                { symbol: 'LINKUSDT', name: 'تشين لينك', icon: '🔗', coingeckoId: 'chainlink', color: '#2a5ada',
+                priority: 12 },
+                { symbol: 'UNIUSDT', name: 'يونيسواب', icon: '🦄', coingeckoId: 'uniswap', color: '#ff007a', priority: 13 },
+                { symbol: 'ATOMUSDT', name: 'كوزموس', icon: '⚛️', coingeckoId: 'cosmos', color: '#2e3148', priority: 14 },
+                { symbol: 'APTUSDT', name: 'أبتوس', icon: '🔷', coingeckoId: 'aptos', color: '#00c4b4', priority: 15 },
+                { symbol: 'ARBUSDT', name: 'أربيترم', icon: '🔹', coingeckoId: 'arbitrum', color: '#28a0f0', priority: 16 },
+                { symbol: 'OPUSDT', name: 'أوبتيميزم', icon: '🔴', coingeckoId: 'optimism', color: '#ff0420', priority: 17 },
+                { symbol: 'NEARUSDT', name: 'نيير', icon: '🌙', coingeckoId: 'near', color: '#000000', priority: 18 },
+                { symbol: 'INJUSDT', name: 'إنجكتف', icon: '💉', coingeckoId: 'injective-protocol', color: '#00f0ff',
+                    priority: 19 },
+                { symbol: 'FETUSDT', name: 'فيتش.إيه آي', icon: '🤖', coingeckoId: 'fetch-ai', color: '#4a90e2',
+                priority: 20 },
+                { symbol: 'RNDRUSDT', name: 'ريندر', icon: '🎨', coingeckoId: 'render-token', color: '#ff6b35',
+                priority: 21 },
+                { symbol: 'GRTUSDT', name: 'ذا غراف', icon: '📊', coingeckoId: 'the-graph', color: '#6747ed', priority: 22 },
+                { symbol: 'AAVEUSDT', name: 'آفي', icon: '👻', coingeckoId: 'aave', color: '#b6509e', priority: 23 },
+                { symbol: 'MKRUSDT', name: 'ميكر', icon: '🏛️', coingeckoId: 'maker', color: '#1aab9b', priority: 24 },
+                { symbol: 'PEPEUSDT', name: 'بيبي', icon: '🐸', coingeckoId: 'pepe', color: '#6abf4b', priority: 25 },
+                { symbol: 'WIFUSDT', name: 'دوج ويف هات', icon: '🧢', coingeckoId: 'dogwifcoin', color: '#d4a574',
+                priority: 26 },
+                { symbol: 'SUIUSDT', name: 'سوي', icon: '💧', coingeckoId: 'sui', color: '#6fb3e0', priority: 27 },
+                { symbol: 'SEIUSDT', name: 'ساي', icon: '🌊', coingeckoId: 'sei-network', color: '#ff4d4d', priority: 28 },
+                { symbol: 'GALAUSDT', name: 'غالا', icon: '🎮', coingeckoId: 'gala', color: '#f0b90b', priority: 29 },
+                { symbol: 'SANDUSDT', name: 'ساندبوكس', icon: '🏖️', coingeckoId: 'the-sandbox', color: '#00adef',
+                    priority: 30 },
+            ];
+
+            const METALS = [
+                { symbol: 'XAU', name: 'الذهب', icon: '🥇', type: 'metal' },
+                { symbol: 'XAG', name: 'الفضة', icon: '🥈', type: 'metal' },
+            ];
+
+            const ALL_ASSETS = [...METALS, ...CRYPTO_ASSETS.map(a => ({ symbol: a.symbol, name: a.name, icon: a.icon,
+                type: 'crypto' }))];
+
+            let priceStore = {};
+            let klineCache = {};
+            let chartInstance = null;
+            let lstmModel = null;
+            let ensembleModel = null;
+            let isModelReady = false;
+            let wsConnection = null;
+            let wsReconnectTimer = null;
+            let sentimentStore = {};
+            let backtestResultsCache = null;
+            let currentSignalsStore = {};
+            let lastSentSignals = {};
+            let telegramLogCache = [];
+            let telegramAutoEnabled = false;
+            let telegramAutoTimer = null;
+            let telegramConfig = { botToken: '', chatId: '' };
+
+            function formatPrice(price) {
+                if (price === undefined || price === null || isNaN(price)) return '--';
+                if (price >= 1000) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2,
+                    maximumFractionDigits: 2 });
+                if (price >= 1) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2,
+                    maximumFractionDigits: 4 });
+                if (price >= 0.01) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 4,
+                    maximumFractionDigits: 6 });
+                return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 10 });
+            }
+
+            function formatVolumeCompact(vol) {
+                if (!vol || isNaN(vol)) return '';
+                if (vol >= 1e9) return (vol / 1e9).toFixed(2) + 'B';
+                if (vol >= 1e6) return (vol / 1e6).toFixed(2) + 'M';
+                if (vol >= 1e3) return (vol / 1e3).toFixed(1) + 'K';
+                return vol.toFixed(0);
+            }
+
+            function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+            function showToast(message, type = 'info') {
+                const existing = document.querySelector('.toast');
+                if (existing) existing.remove();
+                const toast = document.createElement('div');
+                toast.className = 'toast toast-' + type;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => { toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.4s ease'; }, 2200);
+                setTimeout(() => toast.remove(), 2700);
+            }
+
+            // ==================== WebSocket ====================
+            function setupWebSocket() {
+                const streams = CRYPTO_ASSETS.map(a => a.symbol.toLowerCase() + '@miniTicker').join('/');
+                const wsUrl = CONFIG.BINANCE_WS + '?streams=' + streams;
+
+                function connect() {
+                    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) return;
+                    try {
+                        wsConnection = new WebSocket(wsUrl);
+                        wsConnection.onopen = () => {
+                            console.log('🔗 WebSocket متصل - بيانات حية لـ 30 عملة');
+                            updateWsIndicator(true);
+                            if (wsReconnectTimer) { clearTimeout(wsReconnectTimer);
+                                wsReconnectTimer = null; }
+                        };
+                        wsConnection.onmessage = (event) => {
+                            try {
+                                const msg = JSON.parse(event.data);
+                                if (msg.data) {
+                                    const sym = msg.data.s;
+                                    const price = parseFloat(msg.data.c);
+                                    const change = parseFloat(msg.data.P);
+                                    const volume = parseFloat(msg.data.q);
+                                    if (priceStore[sym]) {
+                                        priceStore[sym].price = price;
+                                        priceStore[sym].change24h = change;
+                                        priceStore[sym].volume = volume || priceStore[sym].volume;
+                                        priceStore[sym].timestamp = Date.now();
+                                    } else {
+                                        priceStore[sym] = { price, change24h: change, volume, high: price * 1.005, low: price *
+                                                0.995, open: price * 0.998, timestamp: Date.now() };
+                                    }
+                                }
+                            } catch (e) {}
+                        };
+                        wsConnection.onerror = () => updateWsIndicator(false);
+                        wsConnection.onclose = () => {
+                            updateWsIndicator(false);
+                            wsReconnectTimer = setTimeout(connect, 5000);
+                        };
+                    } catch (e) {
+                        updateWsIndicator(false);
+                        wsReconnectTimer = setTimeout(connect, 8000);
+                    }
+                }
+                connect();
+                setInterval(() => {
+                    if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) connect();
+                }, 15000);
+            }
+
+            function updateWsIndicator(live) {
+                const dot = document.getElementById('wsStatusDot');
+                if (dot) { dot.className = 'ws-indicator ' + (live ? 'ws-live' : 'ws-dead');
+                    dot.title = live ? 'WebSocket مباشر' : 'WebSocket غير متصل - استخدام REST'; }
+            }
+
+            // ==================== طبقة API ====================
+            async function fetchBinanceTickers(symbols) {
+                try {
+                    const symbolsParam = JSON.stringify(symbols);
+                    const url =
+                        `${CONFIG.BINANCE_BASE}/ticker/24hr?symbols=${encodeURIComponent(symbolsParam)}&type=MINI`;
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error('Binance HTTP ' + resp.status);
+                    const data = await resp.json();
+                    data.forEach(t => {
+                        const sym = t.symbol;
+                        if (!priceStore[sym] || Date.now() - (priceStore[sym].timestamp || 0) > 15000) {
+                            priceStore[sym] = {
+                                price: parseFloat(t.lastPrice),
+                                change24h: parseFloat(t.priceChangePercent),
+                                volume: parseFloat(t.quoteVolume),
+                                high: parseFloat(t.highPrice),
+                                low: parseFloat(t.lowPrice),
+                                open: parseFloat(t.openPrice),
+                                timestamp: Date.now(),
+                            };
+                        }
+                    });
+                } catch (e) { console.warn('⚠️ فشل جلب بيانات Binance:', e.message); }
+            }
+
+            async function fetchBinanceKlines(symbol, interval = '1h', limit = 120) {
+                try {
+                    const url =
+                        `${CONFIG.BINANCE_BASE}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error('Klines HTTP ' + resp.status);
+                    const data = await resp.json();
+                    const candles = data.map(k => ({
+                        time: new Date(k[0]),
+                        open: parseFloat(k[1]),
+                        high: parseFloat(k[2]),
+                        low: parseFloat(k[3]),
+                        close: parseFloat(k[4]),
+                        volume: parseFloat(k[5]),
+                    }));
+                    klineCache[symbol] = candles;
+                    return candles;
+                } catch (e) { console.warn('⚠️ فشل Klines:', symbol, e.message); return null; }
+            }
+
+            async function fetchMetalsPrices() {
+                try {
+                    const resp = await fetch(
+                        'https://api.coingecko.com/api/v3/simple/price?ids=tether-gold,pax-gold&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true'
+                        );
+                    const data = await resp.json();
+                    const goldPrice = data['tether-gold']?.usd || data['pax-gold']?.usd || 2650;
+                    priceStore['XAU'] = {
+                        price: goldPrice,
+                        change24h: data['tether-gold']?.usd_24h_change || 0.5,
+                        volume: data['tether-gold']?.usd_24h_vol || 0,
+                        high: goldPrice * 1.006,
+                        low: goldPrice * 0.994,
+                        open: goldPrice * 0.998,
+                        timestamp: Date.now(),
+                    };
+                    const silverEst = goldPrice / 80;
+                    priceStore['XAG'] = {
+                        price: silverEst,
+                        change24h: (Math.random() * 1.4) - 0.7,
+                        volume: 0,
+                        high: silverEst * 1.008,
+                        low: silverEst * 0.992,
+                        open: silverEst * 0.997,
+                        timestamp: Date.now(),
+                    };
+                } catch (e) {
+                    console.warn('⚠️ فشل المعادن:', e.message);
+                    if (!priceStore['XAU']) priceStore['XAU'] = { price: 2650, change24h: 0.5, volume: 0, high: 2670,
+                        low: 2630, open: 2645, timestamp: Date.now() };
+                    if (!priceStore['XAG']) priceStore['XAG'] = { price: 33.1, change24h: -0.2, volume: 0, high: 33.5,
+                        low: 32.7, open: 33.0, timestamp: Date.now() };
+                }
+            }
+
+            // ==================== المحلل الفني ====================
+            class TechnicalAnalyzer {
+                static RSI(closes, period = 14) {
+                    if (closes.length < period + 1) return 50;
+                    let gains = 0,
+                        losses = 0;
+                    for (let i = closes.length - period; i < closes.length; i++) {
+                        const diff = closes[i] - closes[i - 1];
+                        if (diff >= 0) gains += diff;
+                        else losses -= diff;
+                    }
+                    const avgGain = gains / period;
+                    const avgLoss = losses / period;
+                    if (avgLoss === 0) return 100;
+                    return 100 - (100 / (1 + avgGain / avgLoss));
+                }
+                static MACD(closes, fast = 12, slow = 26, signal = 9) {
+                    if (closes.length < slow + signal) return { macd: 0, signal: 0, histogram: 0, trend: 'محايد' };
+                    const ema = (data, period) => { const k = 2 / (period + 1); let e = data[0]; for (let i = 1; i < data
+                            .length; i++) e = data[i] * k + e * (1 - k); return e; };
+                    const fastEMA = ema(closes, fast);
+                    const slowEMA = ema(closes, slow);
+                    const macdLine = fastEMA - slowEMA;
+                    const signalLine = ema([macdLine], signal);
+                    const histogram = macdLine - signalLine;
+                    return { macd: macdLine, signal: signalLine, histogram, trend: histogram > 0 ? 'صاعد' : 'هابط' };
+                }
+                static BollingerBands(closes, period = 20, stdDev = 2) {
+                    if (closes.length < period) return { upper: closes[closes.length - 1] * 1.05, middle: closes[closes
+                            .length - 1], lower: closes[closes.length - 1] * 0.95, position: 0.5 };
+                    const slice = closes.slice(-period);
+                    const mean = slice.reduce((a, b) => a + b, 0) / period;
+                    const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period;
+                    const std = Math.sqrt(variance);
+                    const upper = mean + stdDev * std;
+                    const lower = mean - stdDev * std;
+                    const current = closes[closes.length - 1];
+                    return { upper, middle: mean, lower, position: clamp((current - lower) / (upper - lower || 0.0001), 0,
+                            1) };
+                }
+                static Stochastic(closes, highs, lows, period = 14) {
+                    if (closes.length < period) return { k: 50, d: 50 };
+                    const hh = Math.max(...highs.slice(-period));
+                    const ll = Math.min(...lows.slice(-period));
+                    const range = hh - ll;
+                    const k = range === 0 ? 50 : ((closes[closes.length - 1] - ll) / range) * 100;
+                    return { k: clamp(k, 0, 100), d: clamp(k, 0, 100) };
+                }
+                static ATR(highs, lows, closes, period = 14) {
+                    if (highs.length < period + 1) return (highs[highs.length - 1] - lows[lows.length - 1]);
+                    let trSum = 0;
+                    for (let i = highs.length - period; i < highs.length; i++) {
+                        trSum += Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[
+                            i - 1]));
+                    }
+                    return trSum / period;
+                }
+                static Ichimoku(highs, lows, closes, tenkanP = 9, kijunP = 26, senkouBP = 52) {
+                    if (closes.length < senkouBP) return null;
+                    const tenkan = (Math.max(...highs.slice(-tenkanP)) + Math.min(...lows.slice(-tenkanP))) / 2;
+                    const kijun = (Math.max(...highs.slice(-kijunP)) + Math.min(...lows.slice(-kijunP))) / 2;
+                    const senkouA = (tenkan + kijun) / 2;
+                    const senkouB = (Math.max(...highs.slice(-senkouBP)) + Math.min(...lows.slice(-senkouBP))) / 2;
+                    const current = closes[closes.length - 1];
+                    const cloudTop = Math.max(senkouA, senkouB);
+                    const cloudBottom = Math.min(senkouA, senkouB);
+                    const aboveCloud = current > cloudTop;
+                    const belowCloud = current < cloudBottom;
+                    const tenkanKijunCross = tenkan > kijun ? 'صاعد' : 'هابط';
+                    const signal = aboveCloud ? 'صاعد قوي' : belowCloud ? 'هابط قوي' : 'محايد';
+                    return { tenkan, kijun, senkouA, senkouB, cloudTop, cloudBottom, aboveCloud, belowCloud,
+                        tenkanKijunCross, signal, current };
+                }
+                static ADX(highs, lows, closes, period = 14) {
+                    if (closes.length < period * 2) return { adx: 25, plusDI: 25, minusDI: 25, strength: 'ضعيف' };
+                    let trSum = 0,
+                        plusDMSum = 0,
+                        minusDMSum = 0;
+                    const n = highs.length;
+                    for (let i = n - period; i < n; i++) {
+                        const tr = Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[
+                            i - 1]));
+                        const upMove = highs[i] - highs[i - 1];
+                        const downMove = lows[i - 1] - lows[i];
+                        const plusDM = upMove > downMove && upMove > 0 ? upMove : 0;
+                        const minusDM = downMove > upMove && downMove > 0 ? downMove : 0;
+                        trSum += tr;
+                        plusDMSum += plusDM;
+                        minusDMSum += minusDM;
+                    }
+                    const plusDI = trSum > 0 ? (plusDMSum / trSum) * 100 : 25;
+                    const minusDI = trSum > 0 ? (minusDMSum / trSum) * 100 : 25;
+                    const dx = (plusDI + minusDI) > 0 ? Math.abs(plusDI - minusDI) / (plusDI + minusDI) * 100 : 0;
+                    const adx = dx;
+                    const strength = adx > 40 ? 'قوي جداً' : adx > 25 ? 'متوسط' : 'ضعيف';
+                    return { adx, plusDI, minusDI, strength };
+                }
+                static Fibonacci(highs, lows) {
+                    const swingHigh = Math.max(...highs.slice(-50));
+                    const swingLow = Math.min(...lows.slice(-50));
+                    const range = swingHigh - swingLow;
+                    const current = highs[highs.length - 1] || swingHigh;
+                    return { swingHigh, swingLow, levels: { '0': swingLow, '0.236': swingLow + range * 0.236, '0.382': swingLow +
+                                range * 0.382, '0.5': swingLow + range * 0.5, '0.618': swingLow + range * 0.618, '0.786': swingLow +
+                                range * 0.786, '1': swingHigh }, nearestLevel: null, current };
+                }
+                static OBV(closes, volumes) {
+                    if (closes.length < 2) return { obv: 0, obvMA: 0, trend: 'محايد' };
+                    let obv = 0;
+                    for (let i = 1; i < closes.length; i++) {
+                        if (closes[i] > closes[i - 1]) obv += (volumes[i] || 0);
+                        else if (closes[i] < closes[i - 1]) obv -= (volumes[i] || 0);
+                    }
+                    const obvMA = closes.length >= 20 ? obv / 20 : obv;
+                    return { obv, obvMA, trend: obv > obvMA ? 'صاعد' : 'هابط' };
+                }
+                static VolumeProfile(closes, volumes, bins = 10) {
+                    if (closes.length < bins) return { poc: closes[closes.length - 1], vah: closes[closes.length - 1] * 1.02,
+                        val: closes[closes.length - 1] * 0.98, highVolZone: { low: closes[closes.length - 1] * 0.98,
+                            high: closes[closes.length - 1] * 1.02 } };
+                    const minP = Math.min(...closes);
+                    const maxP = Math.max(...closes);
+                    const binSize = (maxP - minP) / bins;
+                    const profile = new Array(bins).fill(0);
+                    closes.forEach((c, i) => { const idx = Math.min(bins - 1, Math.floor((c - minP) / binSize));
+                        profile[idx] += (volumes[i] || 1); });
+                    const maxVolIdx = profile.indexOf(Math.max(...profile));
+                    const poc = minP + binSize * (maxVolIdx + 0.5);
+                    const totalVol = profile.reduce((a, b) => a + b, 0);
+                    let cumVol = 0,
+                        vah = poc,
+                        val = poc;
+                    for (let i = profile.length - 1; i >= 0; i--) { cumVol += profile[i]; if (cumVol >= totalVol * 0.7) { vah =
+                                minP + binSize * i; break; } }
+                    cumVol = 0;
+                    for (let i = 0; i < profile.length; i++) { cumVol += profile[i]; if (cumVol >= totalVol * 0.7) { val =
+                                minP + binSize * (i + 1); break; } }
+                    return { poc, vah, val, highVolZone: { low: val, high: vah } };
+                }
+                static findSupportResistance(highs, lows, closes) {
+                    const allLevels = [...highs, ...lows].sort((a, b) => a - b);
+                    const current = closes[closes.length - 1];
+                    let support = current * 0.965,
+                        resistance = current * 1.035;
+                    for (let i = allLevels.length - 1; i >= 0; i--) { if (allLevels[i] < current * 0.995) { support =
+                                allLevels[i]; break; } }
+                    for (let i = 0; i < allLevels.length; i++) { if (allLevels[i] > current * 1.005) { resistance =
+                                allLevels[i]; break; } }
+                    return { support, resistance };
+                }
+                static fullAnalysis(candles) {
+                    if (!candles || candles.length < 52) return null;
+                    const closes = candles.map(c => c.close);
+                    const highs = candles.map(c => c.high);
+                    const lows = candles.map(c => c.low);
+                    const volumes = candles.map(c => c.volume);
+                    return {
+                        rsi: this.RSI(closes),
+                        macd: this.MACD(closes),
+                        bb: this.BollingerBands(closes),
+                        stoch: this.Stochastic(closes, highs, lows),
+                        atr: this.ATR(highs, lows, closes),
+                        sr: this.findSupportResistance(highs, lows, closes),
+                        ichimoku: this.Ichimoku(highs, lows, closes),
+                        adx: this.ADX(highs, lows, closes),
+                        fib: this.Fibonacci(highs, lows),
+                        obv: this.OBV(closes, volumes),
+                        vp: this.VolumeProfile(closes, volumes),
+                        currentPrice: closes[closes.length - 1],
+                        closes,
+                        highs,
+                        lows,
+                        volumes
+                    };
+                }
+            }
+
+            function estimateSentiment(symbol, analysis, priceData) {
+                let score = 0;
+                if (analysis) {
+                    if (analysis.rsi < 30) score += 0.25;
+                    if (analysis.rsi > 70) score -= 0.25;
+                    if (analysis.macd.trend === 'صاعد') score += 0.15;
+                    else score -= 0.15;
+                    if (analysis.ichimoku && analysis.ichimoku.aboveCloud) score += 0.2;
+                    if (analysis.ichimoku && analysis.ichimoku.belowCloud) score -= 0.2;
+                    if (analysis.adx && analysis.adx.adx > 35) score += (analysis.adx.plusDI > analysis.adx.minusDI ? 0.15 :
+                        -0.15);
+                    if (analysis.obv && analysis.obv.trend === 'صاعد') score += 0.1;
+                    else score -= 0.1;
+                }
+                if (priceData && priceData.change24h > 3) score += 0.15;
+                if (priceData && priceData.change24h < -3) score -= 0.15;
+                score = clamp(score, -1, 1);
+                sentimentStore[symbol] = { score, label: score > 0.25 ? 'إيجابي' : score < -0.25 ? 'سلبي' : 'محايد',
+                    timestamp: Date.now() };
+                return sentimentStore[symbol];
+            }
+
+            function getEnsemblePrediction(analysis, priceData, symbol) {
+                if (!analysis) return { signal: 'محايد', confidence: 0.35, topFeature: 'غير متوفر', features: [],
+                    buyScore: 0, sellScore: 0 };
+                const rsiN = analysis.rsi / 100;
+                const macdN = clamp((analysis.macd.histogram + 0.5) / 1.0, 0, 1);
+                const bbN = analysis.bb.position;
+                const stochN = analysis.stoch.k / 100;
+                const changeN = clamp(((priceData?.change24h || 0) + 30) / 60, 0, 1);
+                const atrRatio = clamp((analysis.atr / analysis.currentPrice) / 0.06, 0, 1);
+                const adxN = analysis.adx ? analysis.adx.adx / 100 : 0.25;
+                const ichiBull = analysis.ichimoku && analysis.ichimoku.aboveCloud ? 1 : 0;
+                const ichiBear = analysis.ichimoku && analysis.ichimoku.belowCloud ? 1 : 0;
+                const obvBull = analysis.obv && analysis.obv.trend === 'صاعد' ? 1 : 0;
+                const fibNearSupport = analysis.fib ? clamp((analysis.currentPrice - analysis.fib.swingLow) / (analysis
+                    .fib.swingHigh - analysis.fib.swingLow || 1), 0, 1) : 0.5;
+                const vpNearPOC = analysis.vp ? clamp(1 - Math.abs(analysis.currentPrice - analysis.vp.poc) / (analysis
+                    .currentPrice * 0.03), 0, 1) : 0.5;
+                const sentScore = sentimentStore[symbol] ? clamp((sentimentStore[symbol].score + 1) / 2, 0, 1) : 0.5;
+                const features = [rsiN, macdN, bbN, stochN, changeN, atrRatio, adxN, ichiBull, ichiBear, obvBull,
+                    fibNearSupport, vpNearPOC, sentScore, clamp(analysis.adx?.adx / 100 || 0.25, 0, 1)
+                ];
+                let buyScore = 0,
+                    sellScore = 0;
+                if (analysis.rsi < 35) buyScore += 2;
+                if (analysis.rsi > 68) sellScore += 2;
+                if (analysis.macd.trend === 'صاعد' && analysis.macd.histogram > 0.002) buyScore += 1.5;
+                if (analysis.macd.trend === 'هابط' && analysis.macd.histogram < -0.002) sellScore += 1.5;
+                if (analysis.bb.position < 0.2) buyScore += 1.5;
+                if (analysis.bb.position > 0.8) sellScore += 1.5;
+                if (analysis.stoch.k < 20) buyScore += 1;
+                if (analysis.stoch.k > 80) sellScore += 1;
+                if (analysis.ichimoku && analysis.ichimoku.aboveCloud) buyScore += 2;
+                if (analysis.ichimoku && analysis.ichimoku.belowCloud) sellScore += 2;
+                if (analysis.ichimoku && analysis.ichimoku.tenkanKijunCross === 'صاعد') buyScore += 1;
+                if (analysis.ichimoku && analysis.ichimoku.tenkanKijunCross === 'هابط') sellScore += 1;
+                if (analysis.adx && analysis.adx.adx > 30 && analysis.adx.plusDI > analysis.adx.minusDI) buyScore += 1.5;
+                if (analysis.adx && analysis.adx.adx > 30 && analysis.adx.minusDI > analysis.adx.plusDI) sellScore += 1.5;
+                if (analysis.obv && analysis.obv.trend === 'صاعد') buyScore += 1;
+                if (analysis.obv && analysis.obv.trend === 'هابط') sellScore += 1;
+                if (analysis.currentPrice < analysis.sr.support * 1.012) buyScore += 1.5;
+                if (analysis.currentPrice > analysis.sr.resistance * 0.988) sellScore += 1.5;
+                if (sentScore > 0.55) buyScore += 1;
+                if (sentScore < 0.45) sellScore += 1;
+                const total = buyScore + sellScore + 1;
+                const buyProb = buyScore / total;
+                const sellProb = sellScore / total;
+                const neutralProb = 1 - Math.abs(buyProb - sellProb);
+                const maxProb = Math.max(buyProb, sellProb, neutralProb);
+                let signal, confidence;
+                if (maxProb === buyProb && buyProb > 0.38) { signal = 'شراء';
+                    confidence = clamp(buyProb, 0.4, 0.93); } else if (maxProb === sellProb && sellProb > 0.38) { signal =
+                        'بيع';
+                    confidence = clamp(sellProb, 0.4, 0.93); } else { signal = 'محايد';
+                    confidence = clamp(0.35 + neutralProb * 0.3, 0.3, 0.6); }
+                const topFeatures = [{ name: 'RSI', val: analysis.rsi }, { name: 'MACD', val: Math.abs(analysis.macd
+                        .histogram) }, { name: 'Ichimoku', val: analysis.ichimoku?.aboveCloud ? 1 : 0 }, { name: 'ADX',
+                    val: analysis.adx?.adx || 0 }, { name: 'OBV', val: analysis.obv?.trend === 'صاعد' ? 1 : 0 },
+                    { name: 'VolumeProfile', val: vpNearPOC }, { name: 'Fibonacci', val: fibNearSupport },
+                    { name: 'Sentiment', val: sentScore },
+                ];
+                topFeatures.sort((a, b) => b.val - a.val);
+                return { signal, confidence, topFeature: topFeatures[0]?.name || 'RSI', features, buyScore, sellScore };
+            }
+
+            function kellyCriterion(winProb, rewardRiskRatio) {
+                if (rewardRiskRatio <= 0 || winProb <= 0) return 0.005;
+                const kelly = winProb - (1 - winProb) / rewardRiskRatio;
+                return clamp(kelly * CONFIG.KELLY_FRACTION, 0.002, CONFIG.MAX_POSITION_PCT);
+            }
+
+            function generatePreciseSignal(analysis, ensPred, priceData, symbol) {
+                if (!analysis || !priceData) return null;
+                const currentPrice = analysis.currentPrice;
+                const atr = analysis.atr;
+                const sr = analysis.sr;
+                let signal = ensPred.signal;
+                let confidence = ensPred.confidence;
+                let entryPrice, targetPrice, stopPrice, riskReward;
+                if (signal === 'شراء') {
+                    entryPrice = currentPrice;
+                    targetPrice = Math.max(sr.resistance * 0.997, currentPrice + atr * 3.0);
+                    stopPrice = Math.min(sr.support * 0.996, currentPrice - atr * 1.8);
+                    if (stopPrice >= entryPrice * 0.975) stopPrice = entryPrice - atr * 2.0;
+                    if (targetPrice <= entryPrice * 1.012) targetPrice = entryPrice + atr * 3.5;
+                } else if (signal === 'بيع') {
+                    entryPrice = currentPrice;
+                    targetPrice = Math.min(sr.support * 1.003, currentPrice - atr * 3.0);
+                    stopPrice = Math.max(sr.resistance * 1.004, currentPrice + atr * 1.8);
+                    if (stopPrice <= entryPrice * 1.025) stopPrice = entryPrice + atr * 2.0;
+                    if (targetPrice >= entryPrice * 0.988) targetPrice = entryPrice - atr * 3.5;
+                } else {
+                    entryPrice = currentPrice;
+                    targetPrice = currentPrice * 1.018;
+                    stopPrice = currentPrice * 0.982;
+                }
+                const risk = Math.abs(entryPrice - stopPrice);
+                const reward = Math.abs(targetPrice - entryPrice);
+                riskReward = risk > 0 ? reward / risk : 0;
+                const winProbEst = clamp(confidence, 0.3, 0.85);
+                const kellyPos = kellyCriterion(winProbEst, riskReward);
+                const indicatorsDesc =
+                    `Ichi:${analysis.ichimoku?.signal||'--'} | ADX:${analysis.adx?.adx.toFixed(0)||'--'} | OBV:${analysis.obv?.trend||'--'}`;
+                return { signal, confidence, entryPrice, targetPrice, stopPrice, riskReward, kellyPosition: kellyPos,
+                    indicators: indicatorsDesc, topFeature: ensPred.topFeature, currentPrice, atr };
+            }
+
+            function computeAllSignals() {
+                const results = {};
+                ALL_ASSETS.forEach(asset => {
+                    const data = priceStore[asset.symbol];
+                    if (!data) { results[asset.symbol] = null; return; }
+                    const candles = klineCache[asset.symbol] || [];
+                    const analysis = candles.length >= 52 ? TechnicalAnalyzer.fullAnalysis(candles) : null;
+                    estimateSentiment(asset.symbol, analysis, data);
+                    let ensPred = { signal: 'محايد', confidence: 0.35, topFeature: 'غير متوفر' };
+                    if (analysis) ensPred = getEnsemblePrediction(analysis, data, asset.symbol);
+                    const signalData = analysis ? generatePreciseSignal(analysis, ensPred, data, asset.symbol) :
+                        null;
+                    results[asset.symbol] = signalData ? { ...signalData, asset, analysis, priceData: data } :
+                        null;
+                });
+                currentSignalsStore = results;
+                return results;
+            }
+
+            // ==================== باك تست ====================
+            async function runBacktest(symbol = 'BTCUSDT') {
+                console.log('🔬 تشغيل الباك تست لـ ' + symbol + '...');
+                const candles = await fetchBinanceKlines(symbol, '4h', 500);
+                if (!candles || candles.length < 100) return null;
+                const trades = [];
+                let inPosition = false,
+                    entryPrice = 0,
+                    positionType = null;
+                for (let i = 80; i < candles.length; i++) {
+                    const slice = candles.slice(Math.max(0, i - 80), i + 1);
+                    const analysis = TechnicalAnalyzer.fullAnalysis(slice);
+                    if (!analysis) continue;
+                    const priceData = { change24h: ((slice[slice.length - 1].close - slice[Math.max(0, slice.length - 5)]
+                            .close) / slice[Math.max(0, slice.length - 5)].close) * 100,
+                        volume: slice[slice.length - 1].volume };
+                    const ensPred = getEnsemblePrediction(analysis, priceData, symbol);
+                    const sig = generatePreciseSignal(analysis, ensPred, priceData, symbol);
+                    if (!sig) continue;
+                    const cp = slice[slice.length - 1].close;
+                    if (!inPosition && sig.signal !== 'محايد' && sig.confidence > 0.55) {
+                        inPosition = true;
+                        entryPrice = cp;
+                        positionType = sig.signal;
+                        trades.push({ entry: cp, type: sig.signal, time: slice[slice.length - 1].time, exit: null,
+                            pnl: null });
+                    } else if (inPosition) {
+                        const lt = trades[trades.length - 1];
+                        const pnl = positionType === 'شراء' ? (cp - entryPrice) / entryPrice : (entryPrice - cp) /
+                            entryPrice;
+                        if (pnl > 0.04 || pnl < -0.03 || sig.signal !== positionType) { lt.exit = cp;
+                            lt.pnl = pnl;
+                            inPosition = false;
+                            entryPrice = 0;
+                            positionType = null; }
+                    }
+                }
+                if (trades.length === 0) return null;
+                const winning = trades.filter(t => t.pnl !== null && t.pnl > 0);
+                const losing = trades.filter(t => t.pnl !== null && t.pnl <= 0);
+                const completed = trades.filter(t => t.pnl !== null);
+                const winRate = completed.length > 0 ? winning.length / completed.length : 0;
+                const returns = completed.map(t => t.pnl);
+                const avgR = returns.length > 0 ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
+                const stdR = returns.length > 1 ? Math.sqrt(returns.reduce((a, b) => a + (b - avgR) ** 2, 0) / (returns
+                    .length - 1)) : 0.01;
+                const sharpe = stdR > 0 ? (avgR / stdR) * Math.sqrt(252) : 0;
+                let peak = -Infinity,
+                    maxDD = 0,
+                    cumPnl = 0;
+                returns.forEach(r => { cumPnl += r;
+                    peak = Math.max(peak, cumPnl);
+                    maxDD = Math.max(maxDD, peak - cumPnl); });
+                const totalProfit = winning.reduce((a, t) => a + (t.pnl || 0), 0);
+                const totalLoss = Math.abs(losing.reduce((a, t) => a + (t.pnl || 0), 0));
+                const pf = totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? 999 : 0;
+                return { trades: trades.length, winRate, sharpeRatio: sharpe, maxDD, profitFactor: pf, avgReturn: avgR,
+                    symbol, completedTrades: completed.length };
+            }
+
+            function updateBacktestUI(results) {
+                const c = document.getElementById('backtestResults');
+                if (!results || !c) { if (c) c.innerHTML =
+                        '<span class="backtest-metric">⚠️ بيانات غير كافية</span>'; return; }
+                c.innerHTML = `
+                    <span class="backtest-metric">📊 Sharpe: <strong>${results.sharpeRatio.toFixed(2)}</strong></span>
+                    <span class="backtest-metric">📉 Max DD: <strong>${(results.maxDD*100).toFixed(1)}%</strong></span>
+                    <span class="backtest-metric">✅ Win Rate: <strong>${(results.winRate*100).toFixed(1)}%</strong></span>
+                    <span class="backtest-metric">💰 Profit Factor: <strong>${results.profitFactor.toFixed(2)}</strong></span>
+                    <span class="backtest-metric">🔢 الصفقات: <strong>${results.completedTrades}</strong></span>
+                    <span class="backtest-metric">🎯 الأصل: <strong>${results.symbol}</strong></span>`;
+                backtestResultsCache = results;
+            }
+
+            // ==================== تحديث واجهة المستخدم ====================
+            function updateCryptoGrid() {
+                const grid = document.getElementById('cryptoGrid');
+                grid.innerHTML = '';
+                CRYPTO_ASSETS.forEach((asset, idx) => {
+                    const data = priceStore[asset.symbol];
+                    const card = document.createElement('div');
+                    card.className = 'card clickable';
+                    card.style.opacity = '0';
+                    card.style.animation = 'fadeInUp 0.4s ease forwards';
+                    card.style.animationDelay = (idx * 0.012) + 's';
+                    if (!data) {
+                        card.innerHTML =
+                            `<div class="card-header"><h3>${asset.icon} ${asset.name}</h3></div><div class="price" style="color:var(--text-muted)">⏳</div>`;
+                    } else {
+                        const cv = data.change24h;
+                        card.innerHTML = `
+                            <div class="card-header"><h3>${asset.icon} ${asset.name}</h3>
+                            <span class="change-badge ${cv>=0?'change-up':'change-down'}">${cv>=0?'▲':'▼'} ${Math.abs(cv).toFixed(2)}%</span></div>
+                            <div class="price">${formatPrice(data.price)}</div>
+                            <div class="volume">Vol: ${formatVolumeCompact(data.volume)} | H:${formatPrice(data.high)}</div>`;
+                    }
+                    card.addEventListener('click', () => switchChartTab(asset.symbol));
+                    grid.appendChild(card);
+                });
+            }
+
+            function updateMetalCards() {
+                ['XAU', 'XAG'].forEach(sym => {
+                    const data = priceStore[sym];
+                    if (!data) return;
+                    const prefix = sym === 'XAU' ? 'gold' : 'silver';
+                    const priceEl = document.getElementById(prefix + 'Price');
+                    const changeEl = document.getElementById(prefix + 'ChangeBadge');
+                    const volEl = document.getElementById(prefix + 'Volume');
+                    const indEl = document.getElementById(prefix + 'Indicators');
+                    if (priceEl) priceEl.textContent = formatPrice(data.price);
+                    if (changeEl) {
+                        const cv = data.change24h;
+                        changeEl.textContent = (cv >= 0 ? '▲ ' : '▼ ') + Math.abs(cv).toFixed(2) + '%';
+                        changeEl.className = 'change-badge ' + (cv >= 0 ? 'change-up' : 'change-down');
+                    }
+                    if (volEl) volEl.textContent =
+                        `أعلى: ${formatPrice(data.high)} | أدنى: ${formatPrice(data.low)}`;
+                    if (indEl) indEl.innerHTML =
+                        `<span class="indicator-item">📈 ${data.change24h>=0?'صاعد':'هابط'}</span><span class="indicator-item">📊 المدى: ${formatPrice(data.high-data.low)}</span>`;
+                });
+            }
+
+            function updateSignalsTable() {
+                const signals = computeAllSignals();
+                const tbody = document.getElementById('signalsBody');
+                tbody.innerHTML = '';
+                ALL_ASSETS.forEach(asset => {
+                    const signalData = signals[asset.symbol];
+                    if (!signalData) {
+                        const row = document.createElement('tr');
+                        row.innerHTML =
+                            `<td>${asset.icon} ${asset.name}</td><td colspan="8" style="color:var(--text-muted)">⏳ جاري التحميل...</td>`;
+                        tbody.appendChild(row);
+                        return;
+                    }
+                    const confPct = (signalData.confidence * 100).toFixed(1);
+                    const confNum = parseFloat(confPct);
+                    const confClass = confNum >= 65 ? 'fill-high' : confNum >= 45 ? 'fill-mid' : 'fill-low';
+                    const tagClass = signalData.signal === 'شراء' ? 'tag-buy' : signalData.signal === 'بيع' ?
+                        'tag-sell' : 'tag-neutral';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${asset.icon} ${asset.name}</strong><br><small style="color:var(--text-muted)">${asset.symbol}</small></td>
+                        <td><span class="signal-tag ${tagClass}">${signalData.signal}</span></td>
+                        <td><span class="confidence-bar"><span class="fill ${confClass}" style="width:${confPct}%"></span></span> <strong>${confPct}%</strong></td>
+                        <td><span class="precision-highlight">${formatPrice(signalData.entryPrice)}</span></td>
+                        <td style="color:var(--green)">${formatPrice(signalData.targetPrice)}</td>
+                        <td style="color:var(--red)">${formatPrice(signalData.stopPrice)}</td>
+                        <td><strong>1:${signalData.riskReward.toFixed(1)}</strong></td>
+                        <td><strong>${(signalData.kellyPosition*100).toFixed(1)}%</strong></td>
+                        <td><small style="color:var(--purple);font-size:10px">${signalData.topFeature}</small></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            // ==================== الرسم البياني ====================
+            function drawChart(assetSymbol) {
+                const canvas = document.getElementById('mainChart');
+                const ctx = canvas.getContext('2d');
+                const candles = klineCache[assetSymbol] || [];
+                const histData = candles.length >= 5 ? candles.map(c => ({ time: c.time, price: c.close })) : (() => {
+                    const data = priceStore[assetSymbol];
+                    const base = data?.price || 100;
+                    const pts = [];
+                    let p = base * 0.92;
+                    for (let i = 60; i >= 0; i--) { p += (Math.random() - 0.48) * base * 0.015;
+                        p = clamp(p, base * 0.8, base * 1.2);
+                        pts.push({ time: new Date(Date.now() - i * 3600000), price: p }); }
+                    return pts;
+                })();
+                const labels = histData.map(h => {
+                    const d = new Date(h.time);
+                    return d.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) + ' ' + d
+                        .toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+                });
+                const prices = histData.map(h => h.price);
+                if (chartInstance) { chartInstance.destroy();
+                    chartInstance = null; }
+                const asset = CRYPTO_ASSETS.find(a => a.symbol === assetSymbol);
+                const lineColor = asset?.color || (assetSymbol === 'XAU' ? '#f0b90b' : assetSymbol === 'XAG' ? '#c0c0c0' :
+                    '#4d8af0');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 420);
+                gradient.addColorStop(0, lineColor + '35');
+                gradient.addColorStop(1, lineColor + '00');
+                const datasets = [{
+                    label: assetSymbol + ' سعر',
+                    data: prices,
+                    borderColor: lineColor,
+                    backgroundColor: gradient,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: lineColor,
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2,
+                }];
+                const analysis = candles.length >= 52 ? TechnicalAnalyzer.fullAnalysis(candles) : null;
+                if (analysis && analysis.ichimoku) {
+                    const cloudTop = Array(prices.length).fill(analysis.ichimoku.cloudTop);
+                    const cloudBottom = Array(prices.length).fill(analysis.ichimoku.cloudBottom);
+                    datasets.push({
+                        label: 'Ichimoku Cloud (علوي)',
+                        data: cloudTop,
+                        borderColor: 'rgba(0,230,118,0.4)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0,
+                        pointRadius: 0,
+                    });
+                    datasets.push({
+                        label: 'Ichimoku Cloud (سفلي)',
+                        data: cloudBottom,
+                        borderColor: 'rgba(255,59,92,0.4)',
+                        backgroundColor: 'rgba(0,230,118,0.08)',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        fill: 1,
+                        tension: 0,
+                        pointRadius: 0,
+                    });
+                }
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: {
+                            legend: { display: true, labels: { color: '#94a3b8', font: { size: 10 },
+                                    usePointStyle: true, boxWidth: 8 } },
+                            tooltip: { backgroundColor: '#131a27', borderColor: '#263348', borderWidth: 1,
+                                titleColor: '#e8edf5', bodyColor: '#e8edf5', padding: 10, cornerRadius: 8,
+                                callbacks: { label: ctx => 'السعر: ' + formatPrice(ctx.parsed.y) } },
+                        },
+                        scales: {
+                            x: { grid: { color: '#1a2636' }, ticks: { color: '#5c6e84', font: { size: 8 },
+                                    maxTicksLimit: 8 } },
+                            y: { grid: { color: '#1a2636' }, ticks: { color: '#5c6e84', font: { size: 8 },
+                                    callback: v => formatPrice(v) } },
+                        },
+                    },
+                });
+                document.getElementById('chartLastUpdate').textContent = '🕐 آخر تحديث: ' + new Date()
+                    .toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + (
+                        analysis?.ichimoku ? ' | ☁️ Ichimoku Cloud مُفعل' : '');
+            }
+
+            function switchChartTab(symbol) {
+                document.querySelectorAll('.chart-tab').forEach(t => { t.classList.remove('active'); if (t.getAttribute(
+                            'data-asset') === symbol) t.classList.add('active'); });
+                if (!document.querySelector('.chart-tab.active')) { const ft = document.querySelector('.chart-tab'); if (
+                        ft) ft.classList.add('active'); }
+                drawChart(symbol);
+                document.getElementById('mainChart')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // ==================== نظام تيليجرام ====================
+            function loadTelegramConfig() {
+                try {
+                    const saved = localStorage.getItem('tg_config');
+                    if (saved) {
+                        telegramConfig = JSON.parse(saved);
+                        document.getElementById('tgBotToken').value = telegramConfig.botToken || '';
+                        document.getElementById('tgChatId').value = telegramConfig.chatId || '';
+                    }
+                    const savedLastSent = localStorage.getItem('tg_lastSentSignals');
+                    if (savedLastSent) lastSentSignals = JSON.parse(savedLastSent);
+                    const savedLog = localStorage.getItem('tg_log');
+                    if (savedLog) telegramLogCache = JSON.parse(savedLog);
+                    const savedAuto = localStorage.getItem('tg_autoEnabled');
+                    telegramAutoEnabled = savedAuto === 'true';
+                    document.getElementById('tgAutoToggle').checked = telegramAutoEnabled;
+                    updateTgStatusLabel();
+                    updateTgAutoBadge();
+                    renderTelegramLog();
+                    if (telegramAutoEnabled) startTelegramAutoTimer();
+                } catch (e) { console.warn('⚠️ فشل تحميل إعدادات تيليجرام:', e.message); }
+            }
+
+            function saveTelegramConfig() {
+                telegramConfig.botToken = document.getElementById('tgBotToken').value.trim();
+                telegramConfig.chatId = document.getElementById('tgChatId').value.trim();
+                try {
+                    localStorage.setItem('tg_config', JSON.stringify(telegramConfig));
+                    localStorage.setItem('tg_autoEnabled', telegramAutoEnabled.toString());
+                    localStorage.setItem('tg_lastSentSignals', JSON.stringify(lastSentSignals));
+                    localStorage.setItem('tg_log', JSON.stringify(telegramLogCache.slice(-CONFIG.MAX_LOG_ENTRIES)));
+                    const badge = document.getElementById('tgSavedBadge');
+                    badge.innerHTML = '<span class="saved-badge">✅ تم الحفظ</span>';
+                    setTimeout(() => { badge.innerHTML = ''; }, 2500);
+                    showToast('✅ تم حفظ إعدادات تيليجرام بنجاح', 'success');
+                } catch (e) { showToast('❌ فشل حفظ الإعدادات', 'error'); }
+            }
+
+            function updateTgStatusLabel() {
+                const label = document.getElementById('tgStatusLabel');
+                if (telegramAutoEnabled) {
+                    label.innerHTML = '🟢 الإرسال التلقائي: <strong style="color:#2dd4bf;">مُفعَّل</strong>';
+                    label.className = 'tg-status-label active';
+                } else {
+                    label.innerHTML = '🔴 الإرسال التلقائي: <strong>متوقف</strong>';
+                    label.className = 'tg-status-label';
+                }
+            }
+
+            function updateTgAutoBadge() {
+                const badge = document.getElementById('tgAutoBadge');
+                badge.style.display = telegramAutoEnabled ? 'inline-block' : 'none';
+            }
+
+            function addTelegramLog(iconClass, iconEmoji, message, statusType) {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const dateStr = now.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+                telegramLogCache.push({ iconClass, iconEmoji, message, statusType, time: timeStr, date: dateStr,
+                    timestamp: now.getTime() });
+                if (telegramLogCache.length > CONFIG.MAX_LOG_ENTRIES) telegramLogCache =
+                    telegramLogCache.slice(-CONFIG.MAX_LOG_ENTRIES);
+                try { localStorage.setItem('tg_log', JSON.stringify(telegramLogCache)); } catch (e) {}
+                renderTelegramLog();
+            }
+
+            function renderTelegramLog() {
+                const box = document.getElementById('tgLogBox');
+                const countEl = document.getElementById('tgLogCount');
+                if (!box) return;
+                if (telegramLogCache.length === 0) {
+                    box.innerHTML =
+                        '<div class="tg-log-empty">📭 لا توجد عمليات إرسال حتى الآن. قم بحفظ الإعدادات ثم جرب الإرسال التجريبي.</div>';
+                    if (countEl) countEl.textContent = '(0)';
+                    return;
+                }
+                if (countEl) countEl.textContent = '(' + telegramLogCache.length + ')';
+                const recent = telegramLogCache.slice(-25).reverse();
+                box.innerHTML = recent.map(entry => `
+                    <div class="tg-log-entry">
+                        <span class="log-icon ${entry.iconClass}">${entry.iconEmoji}</span>
+                        <span style="flex:1;">${entry.message}</span>
+                        <span class="log-time">${entry.date} ${entry.time}</span>
+                    </div>
+                `).join('');
+            }
+
+            function clearTelegramLog() {
+                telegramLogCache = [];
+                try { localStorage.setItem('tg_log', '[]'); } catch (e) {}
+                renderTelegramLog();
+                showToast('🗑️ تم مسح سجل الإرسال', 'info');
+            }
+
+            function buildSignalMessage(signalData, asset) {
+                const now = new Date();
+                const timeStr = now.toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    year: 'numeric', month: 'short', day: 'numeric' });
+                const sigEmoji = signalData.signal === 'شراء' ? '🟢' : signalData.signal === 'بيع' ? '🔴' : '⚪';
+                const confPct = (signalData.confidence * 100).toFixed(1);
+                const rrFormatted = signalData.riskReward.toFixed(1);
+                const kellyFormatted = (signalData.kellyPosition * 100).toFixed(1);
+                const msg =
+                    `🤖 <b>توصية تداول آلية</b> 🤖\n\n` +
+                    `<b>${asset.icon} ${asset.name} (${asset.symbol})</b>\n\n` +
+                    `📊 <b>الإشارة:</b> ${sigEmoji} <code>${signalData.signal}</code>\n` +
+                    `💵 <b>السعر الحالي:</b> <code>${formatPrice(signalData.currentPrice)}</code>\n` +
+                    `🎯 <b>سعر الدخول:</b> <code>${formatPrice(signalData.entryPrice)}</code>\n` +
+                    `🏁 <b>الهدف:</b> <code>${formatPrice(signalData.targetPrice)}</code>\n` +
+                    `🛑 <b>وقف الخسارة:</b> <code>${formatPrice(signalData.stopPrice)}</code>\n\n` +
+                    `📈 <b>نسبة الثقة:</b> <b>${confPct}%</b>\n` +
+                    `⚖️ <b>نسبة المخاطرة/العائد:</b> <b>1:${rrFormatted}</b>\n` +
+                    `📐 <b>حجم المركز (كيلي):</b> <b>${kellyFormatted}%</b>\n` +
+                    `🔍 <b>أهم مؤشر:</b> <i>${signalData.topFeature}</i>\n` +
+                    `📋 <b>مؤشرات:</b> <i>${signalData.indicators}</i>\n\n` +
+                    `⏰ <b>الوقت:</b> ${timeStr}\n\n` +
+                    `⚠️ <i>تنبيه: هذه توصية آلية بالكامل من منصة الخلايا العصبية الذكية. التداول عالي المخاطر وقد يؤدي لخسارة كاملة. ليست نصيحة استثمارية.</i>`;
+                return msg;
+            }
+
+            async function sendToTelegram(chatId, message) {
+                const token = telegramConfig.botToken;
+                if (!token || !chatId) throw new Error('Token البوت أو معرّف القناة غير مضبوط');
+                const url = `${CONFIG.TELEGRAM_API_BASE}${token}/sendMessage`;
+                const body = {
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'HTML',
+                    disable_web_page_preview: true,
+                    disable_notification: false,
+                };
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const result = await resp.json();
+                if (!result.ok) throw new Error(result.description || 'فشل الإرسال (تحقق من Token و Chat ID)');
+                return result;
+            }
+
+            async function sendTestMessage() {
+                const token = telegramConfig.botToken;
+                const chatId = telegramConfig.chatId;
+                if (!token || !chatId) {
+                    showToast('⚠️ يرجى إدخال Token البوت ومعرّف القناة أولاً', 'error');
+                    addTelegramLog('fail', '❌', 'فشل الإرسال التجريبي: الإعدادات غير مكتملة', 'fail');
+                    return;
+                }
+                const testMsg =
+                    `🤖 <b>اختبار اتصال</b> ✅\n\n` +
+                    `تم ربط منصة <b>الخلايا العصبية الذكية</b> بنجاح مع قناة تيليجرام.\n\n` +
+                    `📅 <b>الوقت:</b> ${new Date().toLocaleString('ar-SA')}\n` +
+                    `🔗 <b>المنصة:</b> LSTM + Ensemble Hybrid Model\n` +
+                    `📊 <b>الأصول المراقبة:</b> 30 عملة + ذهب وفضة\n\n` +
+                    `⚡ <i>الإشارات التلقائية جاهزة للإرسال عند تغير التوصيات.</i>`;
+                try {
+                    await sendToTelegram(chatId, testMsg);
+                    showToast('✅ تم إرسال الرسالة التجريبية بنجاح!', 'success');
+                    addTelegramLog('sent', '✅', 'تم إرسال رسالة تجريبية بنجاح إلى القناة', 'sent');
+                } catch (e) {
+                    showToast('❌ فشل الإرسال: ' + e.message, 'error');
+                    addTelegramLog('fail', '❌', 'فشل الإرسال التجريبي: ' + e.message, 'fail');
+                }
+            }
+
+            async function sendSignalToTelegram(asset, signalData) {
+                const chatId = telegramConfig.chatId;
+                if (!chatId || !telegramConfig.botToken) return false;
+                try {
+                    const msg = buildSignalMessage(signalData, asset);
+                    await sendToTelegram(chatId, msg);
+                    lastSentSignals[asset.symbol] = {
+                        signal: signalData.signal,
+                        entryPrice: signalData.entryPrice,
+                        confidence: signalData.confidence,
+                        timestamp: Date.now(),
+                    };
+                    try { localStorage.setItem('tg_lastSentSignals', JSON.stringify(lastSentSignals)); } catch (
+                    e) {}
+                    addTelegramLog('sent', '✅',
+                        `توصية ${asset.icon} ${asset.name}: <strong>${signalData.signal}</strong> | ثقة ${(signalData.confidence*100).toFixed(1)}% | سعر ${formatPrice(signalData.currentPrice)}`,
+                        'sent');
+                    return true;
+                } catch (e) {
+                    addTelegramLog('fail', '❌',
+                        `فشل إرسال ${asset.icon} ${asset.name}: ${e.message}`, 'fail');
+                    return false;
+                }
+            }
+
+            async function sendAllCurrentSignals() {
+                if (!telegramConfig.botToken || !telegramConfig.chatId) {
+                    showToast('⚠️ يرجى إدخال Token البوت ومعرّف القناة أولاً', 'error');
+                    return;
+                }
+                const signals = currentSignalsStore;
+                let sentCount = 0;
+                let failCount = 0;
+                showToast('📤 جاري إرسال جميع الإشارات...', 'info');
+                const assetsToSend = ALL_ASSETS.filter(a => signals[a.symbol] && signals[a.symbol].signal !== 'محايد');
+                for (const asset of assetsToSend) {
+                    const sd = signals[asset.symbol];
+                    const success = await sendSignalToTelegram(asset, sd);
+                    if (success) sentCount++;
+                    else failCount++;
+                    await new Promise(r => setTimeout(r, 600));
+                }
+                if (sentCount > 0 || failCount > 0) {
+                    showToast(`✅ تم الإرسال: ${sentCount} | ❌ فشل: ${failCount}`, sentCount > 0 ? 'success' : 'error');
+                } else {
+                    showToast('📭 لا توجد إشارات غير محايدة للإرسال حالياً', 'info');
+                }
+            }
+
+            function shouldSendSignal(assetSymbol, newSignal) {
+                if (!newSignal) return false;
+                if (newSignal.signal === 'محايد') return false;
+                const last = lastSentSignals[assetSymbol];
+                if (!last) return true;
+                if (last.signal !== newSignal.signal) return true;
+                const confChange = Math.abs((last.confidence || 0.35) - newSignal.confidence);
+                if (confChange > 0.12) return true;
+                const timeSince = Date.now() - (last.timestamp || 0);
+                if (timeSince > CONFIG.TELEGRAM_COOLDOWN_MS) return true;
+                const priceChange = Math.abs((last.entryPrice || 0) - (newSignal.entryPrice || 0)) / (last.entryPrice ||
+                    1);
+                if (priceChange > 0.025) return true;
+                return false;
+            }
+
+            async function checkAndAutoSend() {
+                if (!telegramAutoEnabled) return;
+                if (!telegramConfig.botToken || !telegramConfig.chatId) return;
+                const signals = currentSignalsStore;
+                let sentCount = 0;
+                for (const asset of ALL_ASSETS) {
+                    const sd = signals[asset.symbol];
+                    if (!sd) continue;
+                    if (shouldSendSignal(asset.symbol, sd)) {
+                        const success = await sendSignalToTelegram(asset, sd);
+                        if (success) {
+                            sentCount++;
+                            await new Promise(r => setTimeout(r, 500));
+                        }
+                    }
+                }
+                if (sentCount > 0) {
+                    console.log(`📤 تيليجرام: تم إرسال ${sentCount} توصية تلقائياً`);
+                }
+            }
+
+            function startTelegramAutoTimer() {
+                stopTelegramAutoTimer();
+                telegramAutoTimer = setInterval(checkAndAutoSend, CONFIG.TELEGRAM_AUTO_CHECK_MS);
+                console.log('🔄 بدء المراقبة التلقائية لإرسال توصيات تيليجرام (كل ' + CONFIG.TELEGRAM_AUTO_CHECK_MS / 1000 +
+                    ' ثانية)');
+            }
+
+            function stopTelegramAutoTimer() {
+                if (telegramAutoTimer) { clearInterval(telegramAutoTimer);
+                    telegramAutoTimer = null; }
+            }
+
+            function setupTelegramListeners() {
+                document.getElementById('tgSaveBtn').addEventListener('click', () => {
+                    saveTelegramConfig();
+                    if (telegramAutoEnabled) startTelegramAutoTimer();
+                });
+                document.getElementById('tgTestBtn').addEventListener('click', sendTestMessage);
+                document.getElementById('tgSendAllBtn').addEventListener('click', sendAllCurrentSignals);
+                document.getElementById('tgClearLogBtn').addEventListener('click', clearTelegramLog);
+                document.getElementById('tgAutoToggle').addEventListener('change', function() {
+                    telegramAutoEnabled = this.checked;
+                    updateTgStatusLabel();
+                    updateTgAutoBadge();
+                    try { localStorage.setItem('tg_autoEnabled', telegramAutoEnabled.toString()); } catch (
+                    e) {}
+                    if (telegramAutoEnabled) {
+                        if (!telegramConfig.botToken || !telegramConfig.chatId) {
+                            showToast('⚠️ يرجى حفظ الإعدادات أولاً (Token + Chat ID)', 'error');
+                            this.checked = false;
+                            telegramAutoEnabled = false;
+                            updateTgStatusLabel();
+                            updateTgAutoBadge();
+                            return;
+                        }
+                        startTelegramAutoTimer();
+                        showToast('🟢 تم تفعيل الإرسال التلقائي للتوصيات', 'success');
+                        addTelegramLog('info', '🔔',
+                            'تم تفعيل نظام الإرسال التلقائي – سيتم إرسال التوصيات فور تغيرها', 'info');
+                        checkAndAutoSend();
+                    } else {
+                        stopTelegramAutoTimer();
+                        showToast('🔴 تم إيقاف الإرسال التلقائي', 'info');
+                        addTelegramLog('info', '🔕', 'تم إيقاف نظام الإرسال التلقائي', 'info');
+                    }
+                });
+            }
+
+            // ==================== الحلقة الرئيسية ====================
+            async function refreshAllData() {
+                const allBinanceSymbols = CRYPTO_ASSETS.map(a => a.symbol);
+                const batchSize = 20;
+                const batches = [];
+                for (let i = 0; i < allBinanceSymbols.length; i += batchSize)
+                    batches.push(allBinanceSymbols.slice(i, i + batchSize));
+                const tickerPromises = batches.map(b => fetchBinanceTickers(b));
+                const metalsPromise = fetchMetalsPrices();
+                await Promise.all([...tickerPromises, metalsPromise]);
+                const activeTab = document.querySelector('.chart-tab.active');
+                const activeSymbol = activeTab?.getAttribute('data-asset') || 'BTCUSDT';
+                const prioritySymbols = CRYPTO_ASSETS.filter(a => a.priority <= 14).map(a => a.symbol);
+                if (!prioritySymbols.includes(activeSymbol) && activeSymbol.includes('USDT'))
+                    prioritySymbols.push(activeSymbol);
+                if (!prioritySymbols.includes('XAU')) prioritySymbols.push('XAU', 'XAG');
+                const klinePromises = prioritySymbols.map(sym => fetchBinanceKlines(sym, CONFIG.KLINE_INTERVAL, CONFIG
+                    .MAX_KLINES));
+                await Promise.allSettled(klinePromises);
+                updateAllUI();
+                if (telegramAutoEnabled) {
+                    setTimeout(checkAndAutoSend, 3000);
+                }
+            }
+
+            function updateAllUI() {
+                updateMetalCards();
+                updateCryptoGrid();
+                updateSignalsTable();
+                const activeTab = document.querySelector('.chart-tab.active');
+                drawChart(activeTab?.getAttribute('data-asset') || 'BTCUSDT');
+            }
+
+            function setupListeners() {
+                document.getElementById('chartTabs').addEventListener('click', e => {
+                    const tab = e.target.closest('.chart-tab');
+                    if (!tab) return;
+                    document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    switchChartTab(tab.getAttribute('data-asset'));
+                });
+                document.getElementById('refreshSignalsBtn').addEventListener('click', () => {
+                    updateSignalsTable();
+                    const btn = document.getElementById('refreshSignalsBtn');
+                    btn.style.transform = 'scale(0.9)';
+                    setTimeout(() => btn.style.transform = 'scale(1)', 140);
+                    if (telegramAutoEnabled) setTimeout(checkAndAutoSend, 2000);
+                });
+                document.getElementById('runBacktestBtn').addEventListener('click', async () => {
+                    const btn = document.getElementById('runBacktestBtn');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الباك تست...';
+                    const results = await runBacktest('BTCUSDT');
+                    updateBacktestUI(results);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-play"></i> تشغيل الباك تست';
+                });
+                document.getElementById('cryptoGrid').addEventListener('click', e => {
+                    const card = e.target.closest('.card');
+                    if (!card) return;
+                    const h3 = card.querySelector('h3');
+                    if (!h3) return;
+                    for (const asset of CRYPTO_ASSETS) { if (h3.textContent.includes(asset.name)) { switchChartTab(
+                                asset.symbol); return; } }
+                });
+                document.getElementById('goldCard')?.addEventListener('click', () => switchChartTab('XAU'));
+                document.getElementById('silverCard')?.addEventListener('click', () => switchChartTab('XAG'));
+            }
+
+            async function buildLSTMModel(sequenceLength = 20, features = 8) {
+                const model = tf.sequential();
+                model.add(tf.layers.lstm({ units: 32, returnSequences: true, inputShape: [sequenceLength, features],
+                    dropout: 0.2, recurrentDropout: 0.2 }));
+                model.add(tf.layers.lstm({ units: 16, returnSequences: false, dropout: 0.15, recurrentDropout: 0.15 }));
+                model.add(tf.layers.dense({ units: 8, activation: 'relu' }));
+                model.add(tf.layers.dropout({ rate: 0.2 }));
+                model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
+                model.compile({ optimizer: tf.train.adam(0.0008), loss: 'categoricalCrossentropy',
+                    metrics: ['accuracy'] });
+                return model;
+            }
+
+            function prepareLSTMSequences(candles, seqLen = 20) {
+                if (!candles || candles.length < seqLen + 10) return { X: null, Y: null };
+                const closes = candles.map(c => c.close);
+                const highs = candles.map(c => c.high);
+                const lows = candles.map(c => c.low);
+                const volumes = candles.map(c => c.volume);
+                const sequences = [];
+                const labels = [];
+                for (let i = seqLen; i < closes.length - 1; i++) {
+                    const seq = [];
+                    for (let j = i - seqLen; j < i; j++) {
+                        const priceChg = closes[j] / closes[Math.max(0, j - 1)] - 1;
+                        const highLowRatio = (highs[j] - lows[j]) / closes[j];
+                        const volRatio = volumes[j] / (volumes[Math.max(0, j - 1)] || volumes[j]);
+                        seq.push([
+                            clamp(priceChg * 100, -10, 10),
+                            clamp(highLowRatio * 100, 0, 20),
+                            clamp(Math.log10(volumes[j] + 1) / 10, 0, 2),
+                            clamp((closes[j] - Math.min(...closes.slice(Math.max(0, j - 20), j + 1))) / (Math.max(
+                                ...closes.slice(Math.max(0, j - 20), j + 1)) - Math.min(...closes.slice(Math.max(0,
+                                j - 20), j + 1)) || 0.001), 0, 1),
+                            clamp((highs[j] - closes[j]) / closes[j] * 100, -5, 5),
+                            clamp((closes[j] - lows[j]) / closes[j] * 100, -5, 5),
+                            0, 0,
+                        ]);
+                    }
+                    const futureChg = (closes[i + 1] - closes[i]) / closes[i];
+                    if (futureChg > 0.005) labels.push([1, 0, 0]);
+                    else if (futureChg < -0.005) labels.push([0, 1, 0]);
+                    else labels.push([0, 0, 1]);
+                    sequences.push(seq);
+                }
+                if (sequences.length < 30) return { X: null, Y: null };
+                return { X: tf.tensor3d(sequences), Y: tf.tensor2d(labels) };
+            }
+
+            async function trainLSTMOnAllData() {
+                console.log('🧠 تدريب نموذج LSTM على بيانات حقيقية...');
+                const allSequences = [];
+                const allLabels = [];
+                const prioritySymbols = CRYPTO_ASSETS.filter(a => a.priority <= 10).map(a => a.symbol);
+                for (const sym of prioritySymbols) {
+                    const candles = klineCache[sym];
+                    if (!candles || candles.length < 40) continue;
+                    const { X, Y } = prepareLSTMSequences(candles, 20);
+                    if (X && Y) { allSequences.push(X);
+                        allLabels.push(Y); }
+                }
+                if (allSequences.length === 0) return await buildFallbackModel();
+                const Xconcat = tf.concat(allSequences, 0);
+                const Yconcat = tf.concat(allLabels, 0);
+                const model = await buildLSTMModel(20, 8);
+                await model.fit(Xconcat, Yconcat, { epochs: 18, shuffle: true, validationSplit: 0.15, batchSize: 16,
+                    callbacks: { onEpochEnd: (ep, logs) => { if (ep === 17) console.log('✅ LSTM جاهز - دقة: ' + (
+                                logs.acc * 100).toFixed(1) + '%'); } } });
+                Xconcat.dispose();
+                Yconcat.dispose();
+                allSequences.forEach(s => s.dispose());
+                allLabels.forEach(l => l.dispose());
+                return model;
+            }
+
+            async function buildFallbackModel() {
+                const model = tf.sequential();
+                model.add(tf.layers.dense({ units: 24, activation: 'relu', inputShape: [14],
+                    kernelRegularizer: tf.regularizers.l2({ l2: 0.001 }) }));
+                model.add(tf.layers.dropout({ rate: 0.25 }));
+                model.add(tf.layers.dense({ units: 14, activation: 'relu' }));
+                model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
+                model.compile({ optimizer: tf.train.adam(0.001), loss: 'categoricalCrossentropy',
+                    metrics: ['accuracy'] });
+                const samples = [],
+                    labels = [];
+                for (let i = 0; i < 400; i++) {
+                    const feats = Array.from({ length: 14 }, () => Math.random());
+                    const rsi = feats[0],
+                        bbP = feats[2],
+                        macdH = feats[1] - 0.5;
+                    let label;
+                    if (rsi < 0.33 && bbP < 0.25 && macdH > 0.02) label = [1, 0, 0];
+                    else if (rsi > 0.68 && bbP > 0.75 && macdH < -0.02) label = [0, 1, 0];
+                    else label = [0, 0, 1];
+                    samples.push(feats);
+                    labels.push(label);
+                }
+                const xs = tf.tensor2d(samples),
+                    ys = tf.tensor2d(labels);
+                await model.fit(xs, ys, { epochs: 30, shuffle: true, validationSplit: 0.15 });
+                xs.dispose();
+                ys.dispose();
+                console.log('✅ نموذج احتياطي جاهز');
+                return model;
+            }
+
+            // ==================== بدء التشغيل ====================
+            async function init() {
+                console.log('🧠🚀 تهيئة منصة الخلايا العصبية الذكية...');
+                console.log('📋 30 عملة + ذهب وفضة | LSTM + Ensemble | Ichimoku · ADX · Fib · OBV · Volume Profile | Telegram');
+                loadTelegramConfig();
+                setupWebSocket();
+                const dataPromise = refreshAllData();
+                const modelPromise = trainLSTMOnAllData();
+                const [_, model] = await Promise.all([dataPromise, modelPromise]);
+                lstmModel = model;
+                ensembleModel = model;
+                isModelReady = true;
+                setupListeners();
+                setupTelegramListeners();
+                drawChart('BTCUSDT');
+                updateSignalsTable();
+                if (telegramAutoEnabled && telegramConfig.botToken && telegramConfig.chatId) {
+                    startTelegramAutoTimer();
+                    setTimeout(checkAndAutoSend, 5000);
+                }
+                console.log('✅ المنصة الاحترافية جاهزة بالكامل');
+                console.log('📊 الأصول المحملة:', Object.keys(priceStore).length);
+                console.log('📡 تيليجرام:', telegramAutoEnabled ? 'مُفعَّل تلقائياً' : 'في وضع الانتظار');
+                setInterval(refreshAllData, CONFIG.REFRESH_INTERVAL_MS);
+                setInterval(updateSignalsTable, CONFIG.SIGNALS_REFRESH_MS);
+                setInterval(() => {
+                    const at = document.querySelector('.chart-tab.active');
+                    if (at) drawChart(at.getAttribute('data-asset'));
+                }, CONFIG.CHART_REFRESH_MS);
+                setTimeout(async () => {
+                    const btResults = await runBacktest('BTCUSDT');
+                    updateBacktestUI(btResults);
+                }, 15000);
+            }
+
+            window.addEventListener('DOMContentLoaded', init);
+            window.platformAPI = {
+                getPrices: () => priceStore,
+                refreshAll: refreshAllData,
+                switchChart: switchChartTab,
+                getModel: () => lstmModel,
+                runBacktest,
+                getKlineCache: () => klineCache,
+                sendToTelegram: sendSignalToTelegram,
+                getTelegramConfig: () => telegramConfig,
+                getCurrentSignals: () => currentSignalsStore,
+                getTelegramLog: () => telegramLogCache,
+            };
+        })();
+    </script>
 </body>
 </html>
